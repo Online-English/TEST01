@@ -1,70 +1,70 @@
-// --- BASE DE DONNÉES CONSOLIDÉE (60 Légumes sur 3 Niveaux) ---
+// --- BASE DE DONNÉES CONSOLIDÉE (60 Vêtements & Accessoires sur 3 Niveaux) ---
 const fruitsData = [
-    // NIVEAU 1 (20 légumes de base - Accessible immédiatement)
-    { en: "Carrot", fr: "Carotte", emoji: "🥕", level: 1 },
-    { en: "Potato", fr: "Pomme de terre", emoji: "🥔", level: 1 },
-    { en: "Tomato", fr: "Tomate", emoji: "🍅", level: 1 },
-    { en: "Broccoli", fr: "Brocoli", emoji: "🥦", level: 1 },
-    { en: "Lettuce", fr: "Salade / Laitue", emoji: "🥬", level: 1 },
-    { en: "Cucumber", fr: "Concombre", emoji: "🥒", level: 1 },
-    { en: "Onion", fr: "Oignon", emoji: "🧅", level: 1 },
-    { en: "Garlic", fr: "Ail", emoji: "🧄", level: 1 },
-    { en: "Corn", fr: "Maïs", emoji: "🌽", level: 1 },
-    { en: "Pea", fr: "Petit pois", emoji: "🫛", level: 1 },
-    { en: "Pumpkin", fr: "Potiron", emoji: "🎃", level: 1 },
-    { en: "Spinach", fr: "Épinard", emoji: "🍃", level: 1 },
-    { en: "Mushroom", fr: "Champignon", emoji: "🍄", level: 1 },
-    { en: "Pepper", fr: "Poivron", emoji: "🫑", level: 1 },
-    { en: "Cabbage", fr: "Chou", emoji: "🥬", level: 1 },
-    { en: "Radish", fr: "Radis", emoji: "🔴", level: 1 },
-    { en: "Leek", fr: "Poireau", emoji: "🌿", level: 1 },
-    { en: "Zucchini", fr: "Courgette", emoji: "🥒", level: 1 },
-    { en: "Eggplant", fr: "Aubergine", emoji: "🍆", level: 1 },
-    { en: "Sweet potato", fr: "Patate douce", emoji: "🍠", level: 1 },
+    // NIVEAU 1 (20 vêtements de base - Accessible immédiatement)
+    { en: "Shirt", fr: "Chemise", emoji: "👔", level: 1 },
+    { en: "T-shirt", fr: "T-shirt", emoji: "👕", level: 1 },
+    { en: "Jeans", fr: "Jean", emoji: "👖", level: 1 },
+    { en: "Dress", fr: "Robe", emoji: "👗", level: 1 },
+    { en: "Skirt", fr: "Jupe", emoji: "👗", level: 1 },
+    { en: "Socks", fr: "Chaussettes", emoji: "🧦", level: 1 },
+    { en: "Shoes", fr: "Chaussures", emoji: "👟", level: 1 },
+    { en: "Coat", fr: "Manteau", emoji: "🧥", level: 1 },
+    { en: "Jacket", fr: "Veste", emoji: "🧥", level: 1 },
+    { en: "Shorts", fr: "Short", emoji: "🩳", level: 1 },
+    { en: "Hat", fr: "Chapeau", emoji: "🎩", level: 1 },
+    { en: "Cap", fr: "Casquette", emoji: "Cap", level: 1 }, // 🧢
+    { en: "Gloves", fr: "Gants", emoji: "🧤", level: 1 },
+    { en: "Scarf", fr: "Écharpe", emoji: "🧣", level: 1 },
+    { en: "Boots", fr: "Bottes", emoji: "🥾", level: 1 },
+    { en: "Tie", fr: "Cravate", emoji: "👔", level: 1 },
+    { en: "Belt", fr: "Ceinture", emoji: "🎗️", level: 1 },
+    { en: "Glasses", fr: "Lunettes", emoji: "👓", level: 1 },
+    { en: "Sweater", fr: "Pull / Candigan", emoji: "🧶", level: 1 },
+    { en: "Swimsuit", fr: "Maillot de bain", emoji: "👙", level: 1 },
 
-    // NIVEAU 2 (20 légumes intermédiaires - Débloqué au Niveau joueur 5)
-    { en: "Asparagus", fr: "Asperge", emoji: "🎋", level: 2 },
-    { en: "Artichoke", fr: "Artichaut", emoji: "🍏", level: 2 },
-    { en: "Beetroot", fr: "Betterave", emoji: "🔴", level: 2 },
-    { en: "Cauliflower", fr: "Chou-fleur", emoji: "🥦", level: 2 },
-    { en: "Celery", fr: "Céleri", emoji: "🌿", level: 2 },
-    { en: "Brussels sprout", fr: "Chou de Bruxelles", emoji: "🟢", level: 2 },
-    { en: "Fennel", fr: "Fenouil", emoji: "🌿", level: 2 },
-    { en: "Ginger", fr: "Gingembre", emoji: "🟤", level: 2 },
-    { en: "Turnip", fr: "Navet", emoji: "🟣", level: 2 },
-    { en: "Parsnip", fr: "Panais", emoji: "🥕", level: 2 },
-    { en: "Kale", fr: "Chou frisé", emoji: "🥬", level: 2 },
-    { en: "Shallot", fr: "Échalote", emoji: "🧅", level: 2 },
-    { en: "Watercress", fr: "Cresson", emoji: "🌿", level: 2 },
-    { en: "Radicchio", fr: "Chicorée rouge", emoji: "🥬", level: 2 },
-    { en: "Okra", fr: "Gombo", emoji: "🌾", level: 2 },
-    { en: "Swiss chard", fr: "Blette", emoji: "🥬", level: 2 },
-    { en: "Endive", fr: "Endive", emoji: "🥬", level: 2 },
-    { en: "Squash", fr: "Courge", emoji: "🎃", level: 2 },
-    { en: "Bean", fr: "Haricot", emoji: "🫘", level: 2 },
-    { en: "Chickpea", fr: "Pois chiche", emoji: "🟤", level: 2 },
+    // NIVEAU 2 (20 vêtements intermédiaires - Débloqué au Niveau joueur 5)
+    { en: "Blouse", fr: "Blouse / Chemisier", emoji: "👚", level: 2 },
+    { en: "Suit", fr: "Costume", emoji: "👔", level: 2 },
+    { en: "Sneakers", fr: "Baskets", emoji: "👟", level: 2 },
+    { en: "Sandals", fr: "Sandales", emoji: "👡", level: 2 },
+    { en: "Slippers", fr: "Pantoufles", emoji: "🥿", level: 2 },
+    { en: "High heels", fr: "Talons hauts", emoji: "👠", level: 2 },
+    { en: "Underwear", fr: "Sous-vêtements", emoji: "🩲", level: 2 },
+    { en: "Sunglasses", fr: "Lunettes de soleil", emoji: "🕶️", level: 2 },
+    { en: "Umbrella", fr: "Parapluie", emoji: "☂️", level: 2 },
+    { en: "Watch", fr: "Montre", emoji: "⌚", level: 2 },
+    { en: "Backpack", fr: "Sac à dos", emoji: "🎒", level: 2 },
+    { en: "Handbag", fr: "Sac à main", emoji: "👜", level: 2 },
+    { en: "Wallet", fr: "Portefeuille", emoji: "👛", level: 2 },
+    { en: "Ring", fr: "Bague", emoji: "💍", level: 2 },
+    { en: "Bycicle", fr: "Gilet", emoji: "🦺", level: 2 }, // Vest
+    { en: "Bathrobe", fr: "Peignoir", emoji: "🥋", level: 2 },
+    { en: "Apron", fr: "Tablier", emoji: "🎽", level: 2 },
+    { en: "Raincoat", fr: "Imperméable", emoji: "🧥", level: 2 },
+    { en: "Necklace", fr: "Collier", emoji: "📿", level: 2 },
+    { en: "Earrings", fr: "Boucles d'oreilles", emoji: "💎", level: 2 },
 
-    // NIVEAU 3 (20 légumes avancés/exotiques - Débloqué au Niveau joueur 10)
-    { en: "Daikon", fr: "Radis blanc", emoji: "🥕", level: 3 },
-    { en: "Taro", fr: "Taro", emoji: "🍠", level: 3 },
-    { en: "Cassava", fr: "Manioc", emoji: "🟤", level: 3 },
-    { en: "Lotus root", fr: "Racine de lotus", emoji: "☸️", level: 3 },
-    { en: "Bok choy", fr: "Chou chinois", emoji: "🥬", level: 3 },
-    { en: "Kohlrabi", fr: "Chou-rave", emoji: "🍏", level: 3 },
-    { en: "Jerusalem artichoke", fr: "Topinambour", emoji: "🟤", level: 3 },
-    { en: "Jicama", fr: "Jicama", emoji: "🥔", level: 3 },
-    { en: "Bitter melon", fr: "Melon amer", emoji: "🥒", level: 3 },
-    { en: "Fiddlehead", fr: "Crosse de fougère", emoji: "🌀", level: 3 },
-    { en: "Samphire", fr: "Salicorne", emoji: "🌿", level: 3 },
-    { en: "Romanesco", fr: "Chou romanesco", emoji: "🥦", level: 3 },
-    { en: "Chayote", fr: "Chayote", emoji: "🍏", level: 3 },
-    { en: "Edamame", fr: "Edamame", emoji: "🫛", level: 3 },
-    { en: "Horseradish", fr: "Raifort", emoji: "🥕", level: 3 },
-    { en: "Bamboo shoot", fr: "Pousse de bambou", emoji: "🎋", level: 3 },
-    { en: "Burdock root", fr: "Racine de bardane", emoji: "🥢", level: 3 },
-    { en: "Tomatillo", fr: "Tomatillo", emoji: "🟢", level: 3 },
-    { en: "Water chestnut", fr: "Châtaigne d'eau", emoji: "🟤", level: 3 },
-    { en: "Rutabaga", fr: "Rutabaga", emoji: "🟣", level: 3 }
+    // NIVEAU 3 (20 vêtements avancés/spécifiques - Débloqué au Niveau joueur 10)
+    { en: "Tuxedo", fr: "Smoking", emoji: "🤵", level: 3 },
+    { en: "Wedding dress", fr: "Robe de mariée", emoji: "👰", level: 3 },
+    { en: "Overalls", fr: "Salopette", emoji: "👖", level: 3 },
+    { en: "Hoodie", fr: "Sweat à capuche", emoji: "👕", level: 3 },
+    { en: "Tracksuit", fr: "Survêtement", emoji: "🎽", level: 3 },
+    { en: "Bow tie", fr: "Noeud papillon", emoji: "🎀", level: 3 },
+    { en: "Cufflinks", fr: "Boutons de manchette", emoji: "💎", level: 3 },
+    { en: "Beret", fr: "Béret", emoji: "👒", level: 3 },
+    { en: "Beanie", fr: "Bonnet", emoji: "🧢", level: 3 },
+    { en: "Mittens", fr: "Moufles", emoji: "🧤", level: 3 },
+    { en: "Cloak", fr: "Cape", emoji: "🦸", level: 3 },
+    { en: "Kimono", fr: "Kimono", emoji: "👘", level: 3 },
+    { en: "Sari", fr: "Sari", emoji: "🥻", level: 3 },
+    { en: "Turban", fr: "Turban", emoji: "👳", level: 3 },
+    { en: "Veil", fr: "Voile", emoji: "👰", level: 3 },
+    { en: "Handkerchief", fr: "Mouchoir", emoji: "⬜", level: 3 },
+    { en: "Flip-flops", fr: "Tongs", emoji: "🩴", level: 3 },
+    { en: "Uniform", fr: "Uniforme", emoji: "🥼", level: 3 },
+    { en: "Brooch", fr: "Broche", emoji: "📌", level: 3 },
+    { en: "Braces", fr: "Bretelles", emoji: "🎗️", level: 3 }
 ];
 
 // --- ÉTATS GÉNÉRAUX & STATISTIQUES ---
@@ -102,46 +102,53 @@ function getNextExerciseWord() {
 function checkAndUnlockBadge(badgeId) {
     if (!unlockedBadges.includes(badgeId)) {
         unlockedBadges.push(badgeId);
-        localStorage.setItem('oe_unlocked_badges_veg', JSON.stringify(unlockedBadges));
+        localStorage.setItem('oe_unlocked_badges_cloth', JSON.stringify(unlockedBadges));
         triggerConfetti();
         if(typeof renderBadgesUI === 'function') renderBadgesUI();
     }
 }
 
-// --- MODULE AUDIO DE HAUTE PRÉCISION ---
+// --- MODULE AUDIO DE HAUTE PRÉCISION (CORRIGÉ) ---
 let preferredVoice = null;
 
+// Fonction de sélection de la meilleure voix disponible sur l'appareil
 function initVoices() {
     if (!('speechSynthesis' in window)) return;
     
     const voices = window.speechSynthesis.getVoices();
-    if (voices.length === 0) return;
+    if (voices.length === 0) return; // Le navigateur n'est pas encore prêt
 
+    // Stratégie de sélection en 3 étapes :
+    // 1. On cherche une voix anglaise moderne (Google, Natural, Neural ou Premium)
     let bestVoice = voices.find(voice => 
         voice.lang.toLowerCase().startsWith('en') && 
         (voice.name.includes('Google') || voice.name.includes('Natural') || voice.name.includes('Neural') || voice.name.includes('Premium'))
     );
 
+    // 2. Si pas trouvé, on cherche une voix anglaise qui n'est PAS une vieille voix "Desktop" de Microsoft
     if (!bestVoice) {
         bestVoice = voices.find(voice => 
             voice.lang.toLowerCase().startsWith('en') && !voice.name.includes('Desktop')
         );
     }
 
+    // 3. En dernier recours, on prend la première voix anglaise standard qui vient
     if (!bestVoice) {
         bestVoice = voices.find(voice => voice.lang.toLowerCase().startsWith('en'));
     }
 
+    // On mémorise la voix pour éviter de refaire la recherche à chaque clic
     if (bestVoice) {
         preferredVoice = bestVoice;
     }
 }
 
+// Écouteur crucial : déclenché dès que le navigateur a fini de charger sa base de données vocales
 if ('speechSynthesis' in window) {
     if (window.speechSynthesis.onvoiceschanged !== undefined) {
         window.speechSynthesis.onvoiceschanged = initVoices;
     }
-    initVoices(); 
+    initVoices(); // Premier essai immédiat au cas où elles seraient déjà prêtes
 }
 
 function setAudioSpeed(speed) {
@@ -150,23 +157,24 @@ function setAudioSpeed(speed) {
     const btnSlow = document.getElementById('speed-slow');
     if (btnNormal && btnSlow) {
         if (speed === 1.0) {
-            btnNormal.className = "px-2.5 py-1 bg-brandBlue text-white rounded-lg font-black transition-all transform active:scale-95 shadow-md shadow-brandBlue/20";
-            btnSlow.className = "px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-gray-300 rounded-lg font-bold flex items-center gap-1 transition-all";
+            btnNormal.className = "px-2 py-1 bg-brandBlue text-white rounded font-bold";
+            btnSlow.className = "px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded flex items-center gap-1";
         } else {
-            btnNormal.className = "px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-gray-300 rounded-lg font-bold transition-all";
-            btnSlow.className = "px-2.5 py-1 bg-brandBlue text-white rounded-lg font-black flex items-center gap-1 transition-all transform active:scale-95 shadow-md shadow-brandBlue/20";
+            btnNormal.className = "px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded font-bold";
+            btnSlow.className = "px-2 py-1 bg-brandBlue text-white rounded flex items-center gap-1";
         }
     }
 }
 
 function playAudio(text) {
     if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); 
+        window.speechSynthesis.cancel(); // Stoppe net toute lecture en cours
         
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'en-US';
         utterance.rate = audioSpeed;
 
+        // Si la voix n'a pas pu être choisie au démarrage, on fait une tentative de secours
         if (!preferredVoice) initVoices();
 
         if (preferredVoice) {
@@ -175,21 +183,25 @@ function playAudio(text) {
 
         window.speechSynthesis.speak(utterance);
     } else {
+        // Fallback ultime si l'appareil ne supporte aucune synthèse vocale native
         const encodedText = encodeURIComponent(text.toLowerCase());
         const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&q=${encodedText}`;
         const audio = new Audio(audioUrl);
         audio.playbackRate = audioSpeed;
-        audio.play().catch(e => console.log("Audio play error:", e));
+        audio.play().catch(e => console.log("Audio playback failed:", e));
     }
 }
+
 
 function playSoundEffect(type) {
     if (!window.AudioContext && !window.webkitAudioContext) return;
     
+    // Initialisation paresseuse au premier clic utilisateur
     if (!globalAudioCtx) {
         globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
     }
     
+    // Sort de la mise en veille si le navigateur avait bloqué le flux audio
     if (globalAudioCtx.state === 'suspended') {
         globalAudioCtx.resume();
     }
@@ -219,11 +231,11 @@ function triggerConfetti() {
         const confetti = document.createElement('div');
         confetti.className = 'confetti';
         confetti.style.left = Math.random() * 100 + 'vw';
-        confetti.style.backgroundColor = ['#FF5A36', '#10B981', '#6366F1', '#FBBF24', '#EC4899'][Math.floor(Math.random() * 5)];
-        confetti.style.transform = `scale(${Math.random() * 0.8 + 0.6})`;
-        confetti.style.animationDelay = Math.random() * 1.0 + 's';
+        confetti.style.backgroundColor = ['#F58634', '#52B788', '#1C3D5A', '#FFD166'][Math.floor(Math.random() * 4)];
+        confetti.style.transform = `scale(${Math.random() * 0.8 + 0.5})`;
+        confetti.style.animationDelay = Math.random() * 1.2 + 's';
         document.body.appendChild(confetti);
-        setTimeout(() => confetti.remove(), 3500);
+        setTimeout(() => confetti.remove(), 4000);
     }
 }
 
@@ -231,12 +243,12 @@ function triggerConfetti() {
 function registerError(fruitObj) {
     if (!errorHistory.some(f => f.en === fruitObj.en)) {
         errorHistory.push(fruitObj);
-        localStorage.setItem('oe_error_history_veg', JSON.stringify(errorHistory));
+        localStorage.setItem('oe_error_history_cloth', JSON.stringify(errorHistory));
     }
 }
 function removeError(englishName) {
     errorHistory = errorHistory.filter(f => f.en !== englishName);
-    localStorage.setItem('oe_error_history_veg', JSON.stringify(errorHistory));
+    localStorage.setItem('oe_error_history_cloth', JSON.stringify(errorHistory));
 }
 
 // --- GESTION DE LA PROGRESSION ---
@@ -244,7 +256,7 @@ function getUserPlayerLevel() {
     return Math.floor(totalPoints / 150) + 1;
 }
 
-// --- ADAPTATION DES TITRES (Potager Gamifié) ---
+// --- ADAPTATION DES TITRES (Mode & Style) ---
 function updateLevelAndTitle() {
     const pLevel = getUserPlayerLevel();
     const levelEl = document.getElementById('user-level');
@@ -252,33 +264,33 @@ function updateLevelAndTitle() {
     
     if (levelEl) levelEl.innerText = pLevel;
 
-    let title = "Novice du Jardin 🎯";
-    if (pLevel >= 2) title = "Apprenti Potager 🌿";
-    if (pLevel >= 3) title = "Jardinier Elite 🛡️";
+    let title = "Novice des Vêtements";
+    if (pLevel >= 2) title = "Styliste en Herbe";
+    if (pLevel >= 3) title = "Passionné de Mode";
     if (pLevel >= 5) {
-        title = "Expert Maraîcher 👑";
+        title = "Créateur de Tendances";
         checkAndUnlockBadge("polyglotte"); 
     }
-    if (pLevel >= 10) title = "Maître Suprême 👾";
+    if (pLevel >= 10) title = "Maître de la Haute Couture";
 
     if (titleEl) titleEl.innerText = title;
     if (typeof updateLevelLockUI === 'function') updateLevelLockUI();
 }
 
-// --- MODULE DARK MODE ---
+// --- MODULE DARK MODE (AJOUTÉ) ---
 function toggleDarkMode() {
     const isDark = document.documentElement.classList.toggle('dark');
     localStorage.setItem('oe_dark_mode', isDark);
     const icon = document.getElementById('theme-icon');
     if (icon) {
-        icon.className = isDark ? "fa-solid fa-sun text-yellow-300 text-base" : "fa-solid fa-moon text-yellow-300 text-base";
+        icon.className = isDark ? "fa-solid fa-sun text-yellow-300" : "fa-solid fa-moon text-yellow-300";
     }
 }
 
-// --- RÉINITIALISATION DES STATISTIQUES ---
+// --- RÉINITIALISATION DES STATISTIQUES (AJOUTÉ) ---
 function resetStats() {
-    if (confirm("Es-tu sûr de vouloir réinitialiser toute ta progression et tes trophées ? 🔥")) {
-        const keysToRemove = ['oe_total_points_veg', 'oe_high_quiz_veg', 'oe_high_speak_veg', 'oe_high_timeattack_veg', 'oe_max_streak_veg', 'oe_fav_veg', 'oe_error_history_veg', 'oe_unlocked_badges_veg'];
+    if (confirm("Êtes-vous sûr de vouloir réinitialiser toutes vos statistiques et votre progression Mode ?")) {
+        const keysToRemove = ['oe_total_points_cloth', 'oe_high_quiz_cloth', 'oe_high_speak_cloth', 'oe_high_timeattack_cloth', 'oe_max_streak_cloth', 'oe_fav_cloth', 'oe_error_history_cloth', 'oe_unlocked_badges_cloth'];
         keysToRemove.forEach(key => localStorage.removeItem(key));
         totalPoints = 0; highScores = { quiz: 0, speak: 0, timeattack: 0 }; maxStreak = 0; currentStreak = 0; errorHistory = []; unlockedBadges = []; favoriteFruits = [];
         document.getElementById('total-points').innerText = totalPoints;
@@ -292,33 +304,33 @@ function resetStats() {
         if (typeof updateFlashcard === 'function') updateFlashcard();
         if (typeof renderBadgesUI === 'function') renderBadgesUI();
         if (typeof renderErrorHistory === 'function') renderErrorHistory();
-        alert("Reset effectué ! Prêt à repartir à zéro ? 😉");
+        alert("Statistiques Mode réinitialisées !");
     }
 }
 
 // --- PERSISTENCE ---
 function saveStats() {
-    localStorage.setItem('oe_total_points_veg', totalPoints);
-    localStorage.setItem('oe_high_quiz_veg', highScores.quiz);
-    localStorage.setItem('oe_high_speak_veg', highScores.speak); 
-    localStorage.setItem('oe_high_timeattack_veg', highScores.timeattack);
-    localStorage.setItem('oe_max_streak_veg', maxStreak);
+    localStorage.setItem('oe_total_points_cloth', totalPoints);
+    localStorage.setItem('oe_high_quiz_cloth', highScores.quiz);
+    localStorage.setItem('oe_high_speak_cloth', highScores.speak); 
+    localStorage.setItem('oe_high_timeattack_cloth', highScores.timeattack);
+    localStorage.setItem('oe_max_streak_cloth', maxStreak);
 }
 
 function loadStats() {
-    totalPoints = parseInt(localStorage.getItem('oe_total_points_veg')) || 0;
-    highScores.quiz = parseInt(localStorage.getItem('oe_high_quiz_veg')) || 0;
-    highScores.speak = parseInt(localStorage.getItem('oe_high_speak_veg')) || 0; 
-    highScores.timeattack = parseInt(localStorage.getItem('oe_high_timeattack_veg')) || 0;
-    maxStreak = parseInt(localStorage.getItem('oe_max_streak_veg')) || 0;
-    favoriteFruits = JSON.parse(localStorage.getItem('oe_fav_veg')) || [];
-    errorHistory = JSON.parse(localStorage.getItem('oe_error_history_veg')) || [];
-    unlockedBadges = JSON.parse(localStorage.getItem('oe_unlocked_badges_veg')) || [];
+    totalPoints = parseInt(localStorage.getItem('oe_total_points_cloth')) || 0;
+    highScores.quiz = parseInt(localStorage.getItem('oe_high_quiz_cloth')) || 0;
+    highScores.speak = parseInt(localStorage.getItem('oe_high_speak_cloth')) || 0; 
+    highScores.timeattack = parseInt(localStorage.getItem('oe_high_timeattack_cloth')) || 0;
+    maxStreak = parseInt(localStorage.getItem('oe_max_streak_cloth')) || 0;
+    favoriteFruits = JSON.parse(localStorage.getItem('oe_fav_cloth')) || [];
+    errorHistory = JSON.parse(localStorage.getItem('oe_error_history_cloth')) || [];
+    unlockedBadges = JSON.parse(localStorage.getItem('oe_unlocked_badges_cloth')) || [];
     
     if (localStorage.getItem('oe_dark_mode') === 'true') {
         document.documentElement.classList.add('dark');
         const icon = document.getElementById('theme-icon');
-        if (icon) icon.className = "fa-solid fa-sun text-yellow-300 text-base";
+        if (icon) icon.className = "fa-solid fa-sun text-yellow-300";
     }
     const totalPointsEl = document.getElementById('total-points');
     if (totalPointsEl) totalPointsEl.innerText = totalPoints;
