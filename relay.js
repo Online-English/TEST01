@@ -2,13 +2,13 @@
 let slideshowTimeout = null;
 let isSlideshowActive = false;
 let currentFlashIndex = 0;
-let quizTimeout = null;  
-let speakTimeout = null; 
+let quizTimeout = null;  // AJOUTÉ : Sécurise les transitions du quiz classique
+let speakTimeout = null; // AJOUTÉ : Sécurise les transitions de la prononciation
 
 let quizStep = 1, quizScore = 0, currentQuizItem = null;
-let currentSpeakItem = null, speakScore = 0; 
+let currentSpeakItem = null, speakScore = 0; // CORRIGÉ : Bonnes variables déclarées ici
 let selectedEnglishNode = null, selectedFrenchNode = null;
-let isProcessingMatch = false; 
+let isProcessingMatch = false; // AJOUTÉ : Sécurité anti-clics abusifs
 
 // Variables pour le mode Contre-la-montre (Time Attack)
 let taTimerInterval = null;
@@ -19,13 +19,15 @@ let currentTAItem = null;
 
 // --- INITIALISATION DES COMPOSANTS AU DEMARRAGE ---
 window.onload = () => {
-    loadStats(); 
+    loadStats(); // Charge les données du localStorage via script.js
     
+    // Remplissage initial des scores dans l'interface
     document.getElementById('stat-high-quiz').innerText = highScores.quiz;
     document.getElementById('stat-high-speak').innerText = highScores.speak || 0;
     document.getElementById('stat-high-timeattack').innerText = highScores.timeattack || 0;
     document.getElementById('stat-max-streak').innerText = maxStreak;
     
+    // Force la vérification des cadenas et affichage initial
     updateLevelLockUI();
     renderDict();
     updateFlashcard();
@@ -37,15 +39,18 @@ window.onload = () => {
 function setVocabLevel(level) {
     selectedVocabularyLevel = parseInt(level);
     
+    // Réinitialise le style visuel de tous les boutons de niveau
     document.querySelectorAll('#vocab-level-selector button').forEach(btn => {
         if (!btn.disabled) {
-            btn.className = "p-2 rounded-xl font-bold text-xs bg-white dark:bg-slate-800 text-brandBlue dark:text-gray-200 border-2 border-slate-100 dark:border-slate-700 shadow-sm transition hover:border-brandOrange hover:scale-105 transform duration-200";
+            btn.className = "p-2 rounded-lg font-bold text-xs bg-gray-100 text-brandBlue dark:bg-gray-700 dark:text-gray-200 border transition hover:border-brandOrange";
         }
     });
     
+    // Active le bouton cliqué
     const activeBtn = document.getElementById(`btn-vlevel-${level}`);
-    activeBtn.className = "p-2 rounded-xl font-bold text-xs bg-gradient-to-r from-brandBlue to-cyberPurple text-white shadow-lg shadow-brandBlue/30 transition transform duration-200";
+    activeBtn.className = "p-2 rounded-lg font-bold text-xs bg-brandBlue text-white border border-brandBlue transition";
     
+    // Actualise les modules dépendants de la liste de mots
     renderDict();
     updateFlashcard();
     resetQuizToMenu();
@@ -61,40 +66,40 @@ function updateLevelLockUI() {
 
     if (playerLevel >= 5) {
         btn2.disabled = false;
-        btn2.innerHTML = "Fruits Niv.2 (40)";
+        btn2.innerHTML = "Légumes Niv.2 (40)"; // MODIFIÉ
         if (selectedVocabularyLevel !== 2) {
-            btn2.className = "p-2 rounded-xl font-bold text-xs bg-white dark:bg-slate-800 text-brandBlue dark:text-gray-200 border-2 border-slate-100 dark:border-slate-700 shadow-sm transition hover:border-brandOrange hover:scale-105 transform duration-200";
+            btn2.className = "p-2 rounded-lg font-bold text-xs bg-gray-100 text-brandBlue dark:bg-gray-700 dark:text-gray-200 border transition hover:border-brandOrange";
         }
     } else {
         btn2.disabled = true;
         btn2.innerHTML = '<i class="fa-solid fa-lock text-[10px]"></i> Niv.2 (40)';
-        btn2.className = "p-2 rounded-xl font-bold text-xs bg-gray-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600 border-2 border-dashed border-slate-200 dark:border-slate-700 cursor-not-allowed flex items-center justify-center gap-1 opacity-60 transition";
+        btn2.className = "p-2 rounded-lg font-bold text-xs bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500 border cursor-not-allowed flex items-center justify-center gap-1 transition";
         if (selectedVocabularyLevel === 2) selectedVocabularyLevel = 1; 
     }
     
     if (playerLevel >= 10) {
         btn3.disabled = false;
-        btn3.innerHTML = "Fruits Niv.3 (60)";
+        btn3.innerHTML = "Légumes Niv.3 (60)"; // MODIFIÉ
         if (selectedVocabularyLevel !== 3) {
-            btn3.className = "p-2 rounded-xl font-bold text-xs bg-white dark:bg-slate-800 text-brandBlue dark:text-gray-200 border-2 border-slate-100 dark:border-slate-700 shadow-sm transition hover:border-brandOrange hover:scale-105 transform duration-200";
+            btn3.className = "p-2 rounded-lg font-bold text-xs bg-gray-100 text-brandBlue dark:bg-gray-700 dark:text-gray-200 border transition hover:border-brandOrange";
         }
     } else {
         btn3.disabled = true;
         btn3.innerHTML = '<i class="fa-solid fa-lock text-[10px]"></i> Niv.3 (60)';
-        btn3.className = "p-2 rounded-xl font-bold text-xs bg-gray-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600 border-2 border-dashed border-slate-200 dark:border-slate-700 cursor-not-allowed flex items-center justify-center gap-1 opacity-60 transition";
+        btn3.className = "p-2 rounded-lg font-bold text-xs bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500 border cursor-not-allowed flex items-center justify-center gap-1 transition";
         if (selectedVocabularyLevel === 3) selectedVocabularyLevel = 1; 
     }
 
     if (playerLevel >= 10) {
-        hint.innerText = "GG ! Tu as débloqué tout le catalogue de vocabulaire ! 🔥";
+        hint.innerText = "Félicitations ! Toutes les listes de vocabulaire sont accessibles.";
     } else if (playerLevel >= 5) {
-        hint.innerText = "Objectif : Atteins le niveau joueur 10 pour débloquer la liste ultime (Niveau 3) !";
+        hint.innerText = "Objectif : Atteignez le niveau joueur 10 pour débloquer la liste ultime (Niveau 3) !";
     } else {
-        hint.innerText = "Astuce : Atteins le niveau joueur 5 pour débloquer le Niveau 2 !";
+        hint.innerText = "Astuce : Atteignez le niveau joueur 5 pour débloquer le Niveau 2 !";
     }
     if (selectedVocabularyLevel === 1) {
         const btn1 = document.getElementById('btn-vlevel-1');
-        if (btn1) btn1.className = "p-2 rounded-xl font-bold text-xs bg-gradient-to-r from-brandBlue to-cyberPurple text-white shadow-lg shadow-brandBlue/30 transition transform";
+        if (btn1) btn1.className = "p-2 rounded-lg font-bold text-xs bg-brandBlue text-white border border-brandBlue transition";
     }
 }
 
@@ -103,6 +108,7 @@ function switchTab(event, tabName) {
     stopSlideshow();
     stopTimeAttack();
     
+    // FIX : Annule les files d'attente du quiz et de la prononciation pour éviter les alertes fantômes
     if (quizTimeout) clearTimeout(quizTimeout);
     if (speakTimeout) clearTimeout(speakTimeout);
     
@@ -110,14 +116,14 @@ function switchTab(event, tabName) {
 
     document.querySelectorAll('.tab-content').forEach(el => { el.classList.add('hidden'); el.classList.remove('active'); });
     document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.className = "tab-btn bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 border-2 border-slate-100 dark:border-slate-700 px-4 py-2 rounded-xl font-bold text-sm transition hover:border-brandBlue/50 hover:scale-102 transform duration-200";
+        btn.className = "tab-btn bg-gray-100 dark:bg-gray-700 text-brandBlue dark:text-gray-200 px-4 py-2 rounded-lg font-medium text-sm transition";
     });
 
     const targetTab = document.getElementById(`tab-${tabName}`);
     targetTab.classList.remove('hidden'); targetTab.classList.add('active');
-    event.currentTarget.className = "tab-btn bg-gradient-to-r from-brandBlue to-cyberPurple text-white px-4 py-2 rounded-xl font-bold text-sm shadow-lg shadow-brandBlue/30 transition transform scale-105 duration-200";
+    event.currentTarget.className = "tab-btn bg-brandBlue text-white px-4 py-2 rounded-lg font-medium text-sm transition";
 
-    document.getElementById('autoplay-container').className = tabName === 'flash' ? "flex items-center gap-2 bg-slate-50 dark:bg-slate-800 p-1.5 px-3 rounded-xl border border-slate-200/60 dark:border-slate-700" : "hidden";
+    document.getElementById('autoplay-container').className = tabName === 'flash' ? "flex items-center gap-2" : "hidden";
 
     if (tabName === 'speak') initSpeak();
     if (tabName === 'match') initMatching();
@@ -127,7 +133,7 @@ function switchTab(event, tabName) {
     }
 }
 
-// --- COMMUNICATEUR DE RÉSULTAT ---
+// --- COMMUNICATEUR DE RÉSULTAT (Vérifie les séries & Badges de Série) ---
 function processAnswerResult(isCorrect) {
     if (isCorrect) {
         currentStreak++;
@@ -137,6 +143,7 @@ function processAnswerResult(isCorrect) {
         document.getElementById('total-points').innerText = totalPoints;
         updateLevelAndTitle();
         
+        // Badge débloqué si l'élève enchaîne 15 réponses
         if (currentStreak >= 15) checkAndUnlockBadge("streak_15");
     } else {
         currentStreak = 0;
@@ -150,8 +157,9 @@ function processAnswerResult(isCorrect) {
 // --- MODULE 1 : DICTIONNAIRE INVERSÉ ---
 function toggleDirectionDico() {
     searchDirection = (searchDirection === 'EN_FR') ? 'FR_EN' : 'EN_FR';
+    // CORRIGÉ : Remplacement de "fruit" par "légume"
     document.getElementById('direction-label').innerText = (searchDirection === 'EN_FR') ? 'FR ➔ EN' : 'EN ➔ FR';
-    document.getElementById('search-input').placeholder = (searchDirection === 'EN_FR') ? 'Rechercher un fruit...' : 'Search for a fruit...';
+    document.getElementById('search-input').placeholder = (searchDirection === 'EN_FR') ? 'Rechercher un légume...' : 'Search for a vegetable...';
     filterWords();
 }
 
@@ -160,37 +168,38 @@ function renderDict(data = null) {
     if (!container) return;
     container.innerHTML = '';
     
+    // Si aucune donnée filtrée n'est passée, on charge par défaut le pack de vocabulaire sélectionné
     if (data === null) {
         data = fruitsData.filter(f => f.level === selectedVocabularyLevel);
     }
 
-    if(data.length === 0) {
-        container.innerHTML = `<p class="text-center text-sm py-5 text-slate-400 font-medium">Aucun fruit dans cette zone d'exploration.</p>`;
-        return;
-    }
+if(data.length === 0) {
+    container.innerHTML = `<p class="text-center text-sm py-4 text-gray-400">Aucun légume trouvé dans ce niveau.</p>`; // MODIFIÉ
+    return;
+}
 
     data.forEach(item => {
         const isFav = favoriteFruits.includes(item.en);
         const div = document.createElement('div');
-        div.className = "bg-white dark:bg-slate-900 p-3.5 rounded-2xl shadow-md border border-slate-100 dark:border-slate-800/80 flex justify-between items-center cursor-pointer hover:border-brandBlue/30 hover:scale-[1.02] transform transition duration-200";
+        div.className = "bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex justify-between items-center cursor-pointer active:bg-gray-100 dark:active:bg-gray-700 transition duration-150";
         div.onclick = () => playAudio(item.en);
         
         const primaryText = (searchDirection === 'EN_FR') ? item.en : item.fr;
         const secondaryText = (searchDirection === 'EN_FR') ? item.fr : item.en;
 
         div.innerHTML = `
-            <div class="flex items-center gap-3.5">
-                <span class="text-3xl filter drop-shadow-sm">${item.emoji}</span>
+            <div class="flex items-center gap-3">
+                <span class="text-3xl">${item.emoji}</span>
                 <div>
-                    <p class="font-black text-base text-slate-800 dark:text-white tracking-wide">${primaryText}</p>
-                    <p class="text-xs font-bold text-slate-400 dark:text-slate-500">${secondaryText}</p>
+                    <p class="font-bold text-sm sm:text-base text-brandBlue dark:text-white">${primaryText}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">${secondaryText}</p>
                 </div>
             </div>
             <div class="flex items-center gap-2">
-                <button onclick="toggleFavorite('${item.en}', event)" class="p-2 text-xl transition text-slate-300 dark:text-slate-700 hover:text-amber-400 hover:scale-110 transform">
-                    <i class="${isFav ? 'fa-solid text-amber-400' : 'fa-regular'} fa-star"></i>
+                <button onclick="toggleFavorite('${item.en}', event)" class="p-2 text-base sm:text-xl transition text-gray-300 dark:text-gray-600 hover:text-yellow-400">
+                    <i class="${isFav ? 'fa-solid text-yellow-400' : 'fa-regular'} fa-star"></i>
                 </button>
-                <span class="text-brandBlue dark:text-indigo-400 bg-brandBlue/5 dark:bg-indigo-500/10 p-2.5 rounded-xl text-base sm:text-lg transition hover:scale-105"><i class="fa-solid fa-volume-high"></i></span>
+                <span class="text-brandBlue dark:text-gray-400 p-2 text-base sm:text-lg"><i class="fa-solid fa-volume-high"></i></span>
             </div>
         `;
         container.appendChild(div);
@@ -212,15 +221,17 @@ function toggleFavorite(englishName, event) {
     const index = favoriteFruits.indexOf(englishName);
     if (index > -1) favoriteFruits.splice(index, 1);
     else favoriteFruits.push(englishName);
-    localStorage.setItem('oe_fav_fruits', JSON.stringify(favoriteFruits));
+    
+    // 🟢 CORRIGÉ : On utilise 'oe_fav_veg' pour s'aligner avec script_6.js
+    localStorage.setItem('oe_fav_veg', JSON.stringify(favoriteFruits));
     filterWords();
 }
 
 function toggleFavFilter() {
     filterOnlyFavs = !filterOnlyFavs;
     document.getElementById('fav-filter-btn').className = filterOnlyFavs 
-        ? "px-4 bg-amber-400 text-white border-2 border-amber-400 rounded-2xl shadow-md transition transform active:scale-95"
-        : "px-4 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 hover:text-amber-500 hover:border-amber-400 transition shadow-sm active:scale-95 transform";
+        ? "px-4 bg-yellow-500 text-white border-2 border-yellow-500 rounded-xl transition"
+        : "px-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-gray-400 hover:text-yellow-500 transition";
     filterWords();
 }
 
@@ -258,12 +269,12 @@ function prevFlashcard() {
 function toggleSlideshow() { if (isSlideshowActive) stopSlideshow(); else startSlideshow(); }
 function startSlideshow() {
     isSlideshowActive = true;
-    document.getElementById('slideshow-btn').className = "bg-gradient-to-r from-red-500 to-brandOrange text-white px-5 py-2.5 rounded-xl text-sm font-black shadow-lg shadow-brandOrange/20 transition hover:scale-105 active:scale-95";
-    document.getElementById('slideshow-btn').innerHTML = `<i class="fa-solid fa-square mr-1 animate-ping"></i> Arrêter la lecture automatique`;
+    document.getElementById('slideshow-btn').className = "bg-red-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow transition hover:scale-105 active:scale-95";
+    document.getElementById('slideshow-btn').innerHTML = `<i class="fa-solid fa-square mr-1"></i> Arrêter le Diaporama`;
     document.getElementById('flash-prev-btn').disabled = true;
     document.getElementById('flash-next-btn').disabled = true;
-    document.getElementById('flash-prev-btn').classList.add('opacity-30');
-    document.getElementById('flash-next-btn').classList.add('opacity-30');
+    document.getElementById('flash-prev-btn').classList.add('opacity-40');
+    document.getElementById('flash-next-btn').classList.add('opacity-40');
     runSlideshowLoop();
 }
 
@@ -272,13 +283,13 @@ function stopSlideshow() {
     clearTimeout(slideshowTimeout);
     const btn = document.getElementById('slideshow-btn');
     if (btn) {
-        btn.className = "bg-gradient-to-r from-brandGreen to-emerald-500 text-white px-5 py-2.5 rounded-xl text-sm font-black shadow-lg shadow-brandGreen/20 transition hover:scale-105 active:scale-95";
-        btn.innerHTML = `<i class="fa-solid fa-play mr-1"></i> Lancer le Diaporama Automatique`;
+        btn.className = "bg-brandGreen text-white px-4 py-2 rounded-xl text-sm font-bold shadow transition hover:scale-105 active:scale-95";
+        btn.innerHTML = `<i class="fa-solid fa-play mr-1"></i> Mode Diaporama`;
     }
     const pB = document.getElementById('flash-prev-btn');
     if(pB) {
-        pB.disabled = false; pB.classList.remove('opacity-30');
-        document.getElementById('flash-next-btn').disabled = false; document.getElementById('flash-next-btn').classList.remove('opacity-30');
+        pB.disabled = false; pB.classList.remove('opacity-40');
+        document.getElementById('flash-next-btn').disabled = false; document.getElementById('flash-next-btn').classList.remove('opacity-40');
     }
     const card = document.getElementById('main-flashcard');
     if (card) card.classList.remove('flipped');
@@ -310,7 +321,7 @@ function resetQuizToMenu() {
     document.getElementById('quiz-timeattack-zone').classList.add('hidden');
 }
 
-// --- QUIZ CLASSIQUE ---
+// --- QUIZ CLASSIQUE (QCM AVEC RÉPÉTITION ESPACÉE) ---
 function launchStandardQuiz() {
     document.getElementById('quiz-mode-menu').classList.add('hidden');
     document.getElementById('quiz-classic-zone').classList.remove('hidden');
@@ -324,15 +335,16 @@ function generateQuizQuestion() {
         if (quizScore > highScores.quiz) { highScores.quiz = quizScore; saveStats(); }
         if (quizScore === 10) {
             triggerConfetti();
-            checkAndUnlockBadge("first_perfect"); 
+            checkAndUnlockBadge("first_perfect"); // Attribution Trophée Sans Faute
         }
-        alert(`🏆 Session terminée ! Score final de ton élève : ${quizScore}/10.`);
+        alert(`Quiz terminé ! Score de votre élève : ${quizScore}/10.`);
         document.getElementById('stat-high-quiz').innerText = highScores.quiz;
         resetQuizToMenu();
         return;
     }
     document.getElementById('quiz-current').innerText = quizStep;
     
+    // ALGORITHME DE REPETITION ESPACEE INTEGREE !
     currentQuizItem = getNextExerciseWord(); 
     document.getElementById('quiz-question').innerText = currentQuizItem.en;
 
@@ -348,7 +360,7 @@ function generateQuizQuestion() {
     container.innerHTML = '';
     choices.forEach(choice => {
         const btn = document.createElement('button');
-        btn.className = "w-full bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 text-slate-800 dark:text-white p-4 rounded-2xl font-bold text-left transition hover:border-brandBlue hover:bg-brandBlue/5 hover:scale-[1.02] transform duration-150 shadow-sm";
+        btn.className = "w-full bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 text-brandBlue dark:text-white p-3 rounded-xl font-medium text-left transition hover:border-brandBlue";
         btn.innerText = choice;
         btn.onclick = () => checkQuizAnswer(btn, choice);
         container.appendChild(btn);
@@ -358,23 +370,23 @@ function generateQuizQuestion() {
 function checkQuizAnswer(button, selected) {
     document.querySelectorAll('#quiz-options button').forEach(b => b.disabled = true);
     if (selected === currentQuizItem.fr) {
-        button.className = "w-full bg-gradient-to-r from-brandGreen to-emerald-500 text-white p-4 rounded-2xl font-bold text-left shadow-lg shadow-brandGreen/20 transition text-white";
+        button.className = "w-full bg-brandGreen text-white p-3 rounded-xl font-medium text-left transition";
         quizScore++;
         document.getElementById('quiz-score').innerText = quizScore;
-        removeError(currentQuizItem.en); 
+        removeError(currentQuizItem.en); // Si trouvé, on l'allège du carnet
         processAnswerResult(true);
     } else {
-        button.className = "w-full bg-gradient-to-r from-red-500 to-brandOrange text-white p-4 rounded-2xl font-bold text-left shadow-lg shadow-red-500/20 transition text-white";
-        registerError(currentQuizItem); 
+        button.className = "w-full bg-red-500 text-white p-3 rounded-xl font-medium text-left transition";
+        registerError(currentQuizItem); // Inscription automatique au carnet d'erreur
         processAnswerResult(false);
         document.querySelectorAll('#quiz-options button').forEach(b => {
-            if(b.innerText === currentQuizItem.fr) b.className = "w-full bg-gradient-to-r from-brandGreen to-emerald-500 text-white p-4 rounded-2xl font-bold text-left shadow-md transition text-white";
+            if(b.innerText === currentQuizItem.fr) b.className = "w-full bg-brandGreen text-white p-3 rounded-xl font-medium text-left transition";
         });
     }
     quizTimeout = setTimeout(() => { quizStep++; generateQuizQuestion(); }, 1200);
 }
 
-// --- MODULE 4 : MODE CONTRE-LA-MONTRE ---
+// --- MODULE 4 : MODE CONTRE-LA-MONTRE (TIME ATTACK CORRIGÉ) ---
 function launchTimeAttack() {
     document.getElementById('quiz-mode-menu').classList.add('hidden');
     document.getElementById('quiz-timeattack-zone').classList.remove('hidden');
@@ -391,13 +403,13 @@ function launchTimeAttack() {
         taTimeLeft--;
         document.getElementById('ta-timer').innerText = taTimeLeft;
         if (taTimeLeft <= 0) {
-            stopTimeAttack(true); 
+            stopTimeAttack(true); // Arrêt avec bilan final
         }
     }, 1000);
 }
 
 function generateTAQuestion() {
-    currentTAItem = getNextExerciseWord(); 
+    currentTAItem = getNextExerciseWord(); // Utilise aussi la répétition espacée
     document.getElementById('ta-question').innerText = currentTAItem.en;
 
     const activePack = fruitsData.filter(f => f.level === selectedVocabularyLevel);
@@ -412,7 +424,7 @@ function generateTAQuestion() {
     container.innerHTML = '';
     choices.forEach(choice => {
         const btn = document.createElement('button');
-        btn.className = "w-full bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 text-slate-800 dark:text-white p-4 rounded-2xl font-bold text-left transition hover:border-brandOrange hover:bg-brandOrange/5 hover:scale-[1.02] transform duration-150 shadow-sm";
+        btn.className = "w-full bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 text-brandBlue dark:text-white p-3 rounded-xl font-medium text-left transition hover:border-brandOrange";
         btn.innerText = choice;
         btn.onclick = () => checkTAAnswer(btn, choice);
         container.appendChild(btn);
@@ -429,20 +441,22 @@ function checkTAAnswer(button, selected) {
         processAnswerResult(true);
         generateTAQuestion(); 
     } else {
-        button.className = "w-full bg-gradient-to-r from-red-500 to-brandOrange text-white p-4 rounded-2xl font-bold text-left transition text-white";
+        button.className = "w-full bg-red-500 text-white p-3 rounded-xl font-medium text-left transition";
         registerError(currentTAItem);
         processAnswerResult(false);
+        // On stocke le timeout dans notre variable globale pour pouvoir l'annuler si nécessaire
         taTimeout = setTimeout(() => { generateTAQuestion(); }, 400);
     }
 }
 
 function stopTimeAttack(isFinishedFinished = false) {
     clearInterval(taTimerInterval);
-    if (taTimeout) clearTimeout(taTimeout); 
+    if (taTimeout) clearTimeout(taTimeout); // FIX : Annule tout changement de question imminent
     
     if (isFinishedFinished) {
-        alert(`⚡ Fin du Chrono ! Ton élève a atomisé ${taScore} mots !`);
+        alert(`Fin du Chrono ! Votre élève a validé ${taScore} mots !`);
         
+        // FIX : Vérification et déblocage du badge Chasseur de Chrono
         if (taScore >= 20) {
             checkAndUnlockBadge("time_20");
         }
@@ -456,7 +470,7 @@ function stopTimeAttack(isFinishedFinished = false) {
     }
 }
 
-// --- MODULE 5 : RECONNAISSANCE VOCALE ---
+// --- MODULE 5 : RECONNAISSANCE VOCALE (SPEAK MODE VIA API WEB SPEECH) ---
 function initSpeak() {
     speakScore = 0;
     document.getElementById('speak-score').innerText = speakScore;
@@ -464,26 +478,26 @@ function initSpeak() {
 }
 
 function generateSpeakQuestion() {
-    currentSpeakItem = getNextExerciseWord(); 
+    currentSpeakItem = getNextExerciseWord(); // Utilisation de la répétition espacée !
     
     document.getElementById('speak-emoji').innerText = currentSpeakItem.emoji;
     document.getElementById('speak-prompt-fr').innerText = currentSpeakItem.fr;
     
     const resultBox = document.getElementById('speech-result');
-    resultBox.className = "hidden text-base font-bold p-3 rounded-xl border";
-    document.getElementById('speech-status').innerText = "Clique sur le gros micro pour parler";
+    resultBox.className = "hidden text-base font-bold p-3 rounded-xl";
+    document.getElementById('speech-status').innerText = "Cliquez sur le micro pour parler";
     document.getElementById('mic-pulse').classList.add('hidden');
 }
 
 function startSpeechRecognition() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-        alert("La reconnaissance vocale n'est pas activée ou supportée par ton navigateur. Teste sur Google Chrome ou Safari mobile !");
+        alert("La reconnaissance vocale n'est pas supportée par ce navigateur. Veuillez utiliser Google Chrome ou Safari.");
         return;
     }
 
     const recognition = new SpeechRecognition();
-    recognition.lang = 'en-US'; 
+    recognition.lang = 'en-US'; // On force la capture en Anglais
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 
@@ -492,8 +506,8 @@ function startSpeechRecognition() {
     const resultBox = document.getElementById('speech-result');
 
     pulse.classList.remove('hidden');
-    statusText.innerText = "ÉCOUTE EN COURS... PARLE ! 🎙️";
-    resultBox.className = "hidden text-base font-bold p-3 rounded-xl border";
+    statusText.innerText = "Écoute active... Vos élèves peuvent parler !";
+    resultBox.className = "hidden text-base font-bold p-3 rounded-xl";
 
     recognition.start();
 
@@ -502,11 +516,11 @@ function startSpeechRecognition() {
         const targetWord = currentSpeakItem.en.toLowerCase();
         
         resultBox.classList.remove('hidden');
-        resultBox.innerHTML = `L'élève a dit : <span class="italic font-black text-slate-700 dark:text-white">"${speechResult}"</span>`;
+        resultBox.innerHTML = `L'élève a dit : <span class="italic">"${speechResult}"</span>`;
 
         if (speechResult === targetWord) {
-            resultBox.className = "text-base font-bold p-3 rounded-xl border bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/40";
-            statusText.innerText = "Incroyable accent ! +10 XP 🎯";
+            resultBox.classList.add('bg-green-100', 'text-green-700', 'dark:bg-green-900/30', 'dark:text-green-400');
+            statusText.innerText = "Excellente prononciation ! +10 XP";
             
             speakScore++;
             document.getElementById('speak-score').innerText = speakScore;
@@ -520,13 +534,14 @@ function startSpeechRecognition() {
             removeError(currentSpeakItem.en); 
             processAnswerResult(true);
             
+            // Passe au mot suivant automatiquement après 2 secondes
             speakTimeout = setTimeout(() => generateSpeakQuestion(), 2000);
 
         } else {
-            resultBox.className = "text-base font-bold p-3 rounded-xl border bg-red-50 text-brandOrange border-red-200 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/40";
-            statusText.innerText = "Aïe, mauvaise prononciation ! Réessaie.";
+            resultBox.classList.add('bg-red-100', 'text-red-700', 'dark:bg-red-900/30', 'dark:text-red-400');
+            statusText.innerText = "Essaye encore ! (Vérifie le mot attendu)";
             
-            registerError(currentSpeakItem); 
+            registerError(currentSpeakItem); // Ajout au carnet d'erreurs
             processAnswerResult(false);
         }
     };
@@ -538,13 +553,13 @@ function startSpeechRecognition() {
 
     recognition.onerror = () => {
         pulse.classList.add('hidden');
-        statusText.innerText = "Le micro n'a rien capté. Clique à nouveau.";
+        statusText.innerText = "Le micro n'a rien détecté. Réessayez.";
     };
 }
 
-// --- MODULE 6 : MATCHING GAME ---
+// --- MODULE 6 : MATCHING GAME V2 (CORRIGÉ ET SÉCURISÉ) ---
 function initMatching() {
-    isProcessingMatch = false; 
+    isProcessingMatch = false; // Reset du verrou
     const grid = document.getElementById('matching-grid'); 
     if(!grid) return;
     grid.innerHTML = '';
@@ -554,16 +569,16 @@ function initMatching() {
     
     let englishCards = shuffled.map(f => ({ text: f.en, type: 'en', id: f.en }));
     let frenchCards = shuffled.map(f => ({ text: f.fr, type: 'fr', id: f.en }));
-    englishCards.sort(() => Math.random() - 0.5); 
-    frenchCards.sort(() => Math.random() - 0.5);
+    englishCards.sort(() => Math.random() - 0.5).slice(0,4); 
+    frenchCards.sort(() => Math.random() - 0.5).slice(0,4);
 
     for(let i=0; i < englishCards.length; i++) {
         const btnEn = document.createElement('button');
-        btnEn.className = "bg-white dark:bg-slate-900 border-2 border-brandBlue text-brandBlue dark:text-indigo-400 p-4 rounded-2xl font-black transition text-center text-xs sm:text-sm hover:scale-105 hover:shadow-md duration-200 shadow-sm";
+        btnEn.className = "bg-white dark:bg-gray-800 border-2 border-brandBlue text-brandBlue dark:text-cyan-400 p-3 rounded-xl font-bold transition text-center text-xs sm:text-sm";
         btnEn.innerText = englishCards[i].text; btnEn.onclick = () => { btnEn.dataset.id = englishCards[i].id; btnEn.dataset.type = 'en'; handleMatchSelect(btnEn); };
 
         const btnFr = document.createElement('button');
-        btnFr.className = "bg-white dark:bg-slate-900 border-2 border-brandOrange text-brandOrange p-4 rounded-2xl font-black transition text-center text-xs sm:text-sm hover:scale-105 hover:shadow-md duration-200 shadow-sm";
+        btnFr.className = "bg-white dark:bg-gray-800 border-2 border-brandOrange text-brandOrange p-3 rounded-xl font-bold transition text-center text-xs sm:text-sm";
         btnFr.innerText = frenchCards[i].text; btnFr.onclick = () => { btnFr.dataset.id = frenchCards[i].id; btnFr.dataset.type = 'fr'; handleMatchSelect(btnFr); };
 
         grid.appendChild(btnEn); grid.appendChild(btnFr);
@@ -574,42 +589,44 @@ function handleMatchSelect(node) {
     if (isProcessingMatch) return;
 
     if (node.dataset.type === 'en') {
-        if (selectedEnglishNode) selectedEnglishNode.classList.remove('bg-brandBlue/10', 'ring-4', 'ring-brandBlue/20');
-        selectedEnglishNode = node; selectedEnglishNode.classList.add('bg-brandBlue/10', 'ring-4', 'ring-brandBlue/20');
+        if (selectedEnglishNode) selectedEnglishNode.classList.remove('bg-brandBlue/20', 'dark:bg-brandBlue/40');
+        selectedEnglishNode = node; selectedEnglishNode.classList.add('bg-brandBlue/20', 'dark:bg-brandBlue/40');
     } else {
-        if (selectedFrenchNode) selectedFrenchNode.classList.remove('bg-brandOrange/10', 'ring-4', 'ring-brandOrange/20');
-        selectedFrenchNode = node; selectedFrenchNode.classList.add('bg-brandOrange/10', 'ring-4', 'ring-brandOrange/20');
+        if (selectedFrenchNode) selectedFrenchNode.classList.remove('bg-brandOrange/20', 'dark:bg-brandOrange/40');
+        selectedFrenchNode = node; selectedFrenchNode.classList.add('bg-brandOrange/20', 'dark:bg-brandOrange/40');
     }
 
     if (selectedEnglishNode && selectedFrenchNode) {
         if (selectedEnglishNode.dataset.id === selectedFrenchNode.dataset.id) {
-            selectedEnglishNode.className = "bg-gradient-to-r from-brandGreen to-emerald-500 text-white p-4 rounded-2xl font-black text-center pointer-events-none transition text-xs sm:text-sm shadow-md matched-card animate-pulse";
-            selectedFrenchNode.className = "bg-gradient-to-r from-brandGreen to-emerald-500 text-white p-4 rounded-2xl font-black text-center pointer-events-none transition text-xs sm:text-sm shadow-md matched-card animate-pulse";
+            // FIX : Ajout de la classe 'matched-card' pour le suivi de la victoire
+            selectedEnglishNode.className = "bg-brandGreen text-white p-3 rounded-xl font-bold text-center pointer-events-none transition text-xs sm:text-sm matched-card";
+            selectedFrenchNode.className = "bg-brandGreen text-white p-3 rounded-xl font-bold text-center pointer-events-none transition text-xs sm:text-sm matched-card";
             removeError(selectedEnglishNode.dataset.id);
             processAnswerResult(true);
             selectedEnglishNode = null; selectedFrenchNode = null;
 
+            // FIX : Détection de la victoire (8 cartes au total passées au vert)
             const totalMatched = document.querySelectorAll('.matched-card').length;
             if (totalMatched === 8) {
                 setTimeout(() => {
                     triggerConfetti();
-                    alert("Combo parfait ! Toutes les paires de fruits ont été fusionnées ! 🎮");
-                    initMatching(); 
+                    alert("Félicitations ! Toutes les paires ont été associées avec succès !");
+                    initMatching(); // Relance automatiquement une nouvelle grille
                 }, 500);
             }
         } else {
             isProcessingMatch = true; 
             const eNode = selectedEnglishNode, fNode = selectedFrenchNode;
-            eNode.className = "bg-gradient-to-r from-red-500 to-brandOrange text-white p-4 rounded-2xl font-black text-center transition text-xs sm:text-sm shadow-md shadow-red-500/20";
-            fNode.className = "bg-gradient-to-r from-red-500 to-brandOrange text-white p-4 rounded-2xl font-black text-center transition text-xs sm:text-sm shadow-md shadow-red-500/20";
+            eNode.className = "bg-red-500 text-white p-3 rounded-xl font-bold text-center transition text-xs sm:text-sm";
+            fNode.className = "bg-red-500 text-white p-3 rounded-xl font-bold text-center transition text-xs sm:text-sm";
             
             const failFruit = fruitsData.find(f => f.en === eNode.dataset.id);
             if(failFruit) registerError(failFruit);
             
             processAnswerResult(false);
             setTimeout(() => {
-                eNode.className = "bg-white dark:bg-slate-900 border-2 border-brandBlue text-brandBlue dark:text-indigo-400 p-4 rounded-2xl font-black transition text-center text-xs sm:text-sm shadow-sm";
-                fNode.className = "bg-white dark:bg-slate-900 border-2 border-brandOrange text-brandOrange p-4 rounded-2xl font-black transition text-center text-xs sm:text-sm shadow-sm";
+                eNode.className = "bg-white dark:bg-gray-800 border-2 border-brandBlue text-brandBlue dark:text-cyan-400 p-3 rounded-xl font-bold transition text-center text-xs sm:text-sm";
+                fNode.className = "bg-white dark:bg-gray-800 border-2 border-brandOrange text-brandOrange p-3 rounded-xl font-bold transition text-center text-xs sm:text-sm";
                 isProcessingMatch = false; 
             }, 800);
             selectedEnglishNode = null; selectedFrenchNode = null;
@@ -626,18 +643,18 @@ function renderBadgesUI() {
     badgesDatabase.forEach(badge => {
         const isUnlocked = unlockedBadges.includes(badge.id);
         const div = document.createElement('div');
-        div.className = `p-3.5 rounded-2xl border-2 flex items-center gap-3 transition duration-300 ${isUnlocked ? 'bg-white dark:bg-slate-900 border-emerald-100 dark:border-emerald-950 shadow-md opacity-100' : 'bg-slate-100/50 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800 opacity-30 select-none'}`;
+        div.className = `p-3 rounded-xl border flex items-center gap-3 transition ${isUnlocked ? 'bg-white dark:bg-gray-800 border-green-200 dark:border-green-900/40 opacity-100 shadow-sm' : 'bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-800 opacity-40'}`;
         
         div.innerHTML = `
-            <div class="w-11 h-11 rounded-xl flex items-center justify-center text-2xl shadow-md ${isUnlocked ? badge.color + ' text-white animate-bounce' : 'bg-slate-300 text-slate-500 dark:bg-slate-800'}">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center text-xl shadow-inner ${isUnlocked ? badge.color + ' text-white' : 'bg-gray-300 text-gray-500 dark:bg-gray-700'}">
                 ${badge.icon}
             </div>
             <div class="text-left">
-                <h4 class="font-black text-xs text-slate-800 dark:text-white flex items-center gap-1 uppercase tracking-wide">
+                <h4 class="font-bold text-xs text-brandBlue dark:text-white flex items-center gap-1">
                     ${badge.title} 
-                    ${isUnlocked ? '<i class="fa-solid fa-circle-check text-brandGreen text-[11px]"></i>' : ''}
+                    ${isUnlocked ? '<i class="fa-solid fa-circle-check text-brandGreen text-[10px]"></i>' : ''}
                 </h4>
-                <p class="text-[10px] text-slate-400 dark:text-slate-500 font-bold leading-tight mt-0.5">${badge.desc}</p>
+                <p class="text-[10px] text-gray-400 font-medium leading-tight">${badge.desc}</p>
             </div>
         `;
         container.appendChild(div);
@@ -651,20 +668,20 @@ function renderErrorHistory() {
     container.innerHTML = '';
 
     if (errorHistory.length === 0) {
-        container.innerHTML = `<p class="text-slate-400 dark:text-slate-600 italic text-center text-xs py-5 font-medium">Zéro faute ! Tes élèves sont des machines ! 🦾</p>`;
+        container.innerHTML = `<p class="text-gray-400 italic text-center text-xs py-4">Aucune erreur enregistrée, félicitations à vos élèves !</p>`;
         return;
     }
 
     errorHistory.forEach(item => {
         const div = document.createElement('div');
-        div.className = "flex items-center justify-between p-2.5 bg-red-50/60 dark:bg-red-950/10 border border-red-100 dark:border-red-900/30 rounded-xl text-xs font-bold";
+        div.className = "flex items-center justify-between p-2 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/40 rounded-lg text-xs";
         div.innerHTML = `
             <div class="flex items-center gap-2">
-                <span class="text-lg">${item.emoji}</span>
-                <span class="font-black text-brandOrange">${item.en}</span>
-                <span class="text-slate-400 dark:text-slate-500">(${item.fr})</span>
+                <span>${item.emoji}</span>
+                <span class="font-bold text-brandBlue dark:text-red-300">${item.en}</span>
+                <span class="text-gray-400">(${item.fr}) - Liste ${item.level}</span>
             </div>
-            <button onclick="clearWordFromRevision('${item.en}')" class="bg-brandGreen/10 hover:bg-brandGreen hover:text-white border border-brandGreen/30 text-brandGreen px-2.5 py-1 rounded-lg transition font-black text-[10px]" title="Marquer comme validé">
+            <button onclick="clearWordFromRevision('${item.en}')" class="text-brandGreen hover:underline font-bold transition text-[10px]" title="Marquer comme validé">
                 <i class="fa-solid fa-check"></i> Acquis
             </button>
         `;
