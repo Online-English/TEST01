@@ -81,10 +81,10 @@ let selectedVocabularyLevel = 1;
 
 // --- CONFIGURATION DES BADGES ---
 const badgesDatabase = [
-    { id: "first_perfect", title: "Sans Faute !", desc: "Faire un 10/10 en QCM ou Writing", icon: "🏅", color: "bg-yellow-500" },
-    { id: "streak_15", title: "Inarrêtable", desc: "Atteindre une série de 15 bonnes réponses", icon: "🔥", color: "bg-orange-500" },
-    { id: "time_20", title: "Chasseur de Chrono", desc: "Marquer 20 points en Time Attack", icon: "⚡", color: "bg-cyan-500" },
-    { id: "polyglotte", title: "Polyglotte", desc: "Débloquer le niveau 2 de vocabulaire", icon: "🗣️", color: "bg-purple-500" }
+    { id: "first_perfect", title: "Sans Faute ! 🏆", desc: "Faire un parfait 10/10 en Session Quiz", icon: "🏅", color: "bg-gradient-to-tr from-amber-400 to-yellow-500" },
+    { id: "streak_15", title: "Inarrêtable ! 🔥", desc: "Atteindre une série folle de 15 bonnes réponses", icon: "⚡", color: "bg-gradient-to-tr from-orange-500 to-red-500" },
+    { id: "time_20", title: "Chasseur de Chrono ⏱️", desc: "Valider 20 points ou plus en Time Attack", icon: "🔮", color: "bg-gradient-to-tr from-cyan-400 to-brandBlue" },
+    { id: "polyglotte", title: "Maraîcher Pro 🌿", desc: "Débloquer le niveau 2 de vocabulaire", icon: "👑", color: "bg-gradient-to-tr from-purple-500 to-pink-500" }
 ];
 
 // --- ALGORITHME DE RÉPÉTITION ESPACÉE ---
@@ -108,47 +108,40 @@ function checkAndUnlockBadge(badgeId) {
     }
 }
 
-// --- MODULE AUDIO DE HAUTE PRÉCISION (CORRIGÉ) ---
+// --- MODULE AUDIO DE HAUTE PRÉCISION ---
 let preferredVoice = null;
 
-// Fonction de sélection de la meilleure voix disponible sur l'appareil
 function initVoices() {
     if (!('speechSynthesis' in window)) return;
     
     const voices = window.speechSynthesis.getVoices();
-    if (voices.length === 0) return; // Le navigateur n'est pas encore prêt
+    if (voices.length === 0) return;
 
-    // Stratégie de sélection en 3 étapes :
-    // 1. On cherche une voix anglaise moderne (Google, Natural, Neural ou Premium)
     let bestVoice = voices.find(voice => 
         voice.lang.toLowerCase().startsWith('en') && 
         (voice.name.includes('Google') || voice.name.includes('Natural') || voice.name.includes('Neural') || voice.name.includes('Premium'))
     );
 
-    // 2. Si pas trouvé, on cherche une voix anglaise qui n'est PAS une vieille voix "Desktop" de Microsoft
     if (!bestVoice) {
         bestVoice = voices.find(voice => 
             voice.lang.toLowerCase().startsWith('en') && !voice.name.includes('Desktop')
         );
     }
 
-    // 3. En dernier recours, on prend la première voix anglaise standard qui vient
     if (!bestVoice) {
         bestVoice = voices.find(voice => voice.lang.toLowerCase().startsWith('en'));
     }
 
-    // On mémorise la voix pour éviter de refaire la recherche à chaque clic
     if (bestVoice) {
         preferredVoice = bestVoice;
     }
 }
 
-// Écouteur crucial : déclenché dès que le navigateur a fini de charger sa base de données vocales
 if ('speechSynthesis' in window) {
     if (window.speechSynthesis.onvoiceschanged !== undefined) {
         window.speechSynthesis.onvoiceschanged = initVoices;
     }
-    initVoices(); // Premier essai immédiat au cas où elles seraient déjà prêtes
+    initVoices(); 
 }
 
 function setAudioSpeed(speed) {
@@ -157,24 +150,23 @@ function setAudioSpeed(speed) {
     const btnSlow = document.getElementById('speed-slow');
     if (btnNormal && btnSlow) {
         if (speed === 1.0) {
-            btnNormal.className = "px-2 py-1 bg-brandBlue text-white rounded font-bold";
-            btnSlow.className = "px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded flex items-center gap-1";
+            btnNormal.className = "px-2.5 py-1 bg-brandBlue text-white rounded-lg font-black transition-all transform active:scale-95 shadow-md shadow-brandBlue/20";
+            btnSlow.className = "px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-gray-300 rounded-lg font-bold flex items-center gap-1 transition-all";
         } else {
-            btnNormal.className = "px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded font-bold";
-            btnSlow.className = "px-2 py-1 bg-brandBlue text-white rounded flex items-center gap-1";
+            btnNormal.className = "px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-gray-300 rounded-lg font-bold transition-all";
+            btnSlow.className = "px-2.5 py-1 bg-brandBlue text-white rounded-lg font-black flex items-center gap-1 transition-all transform active:scale-95 shadow-md shadow-brandBlue/20";
         }
     }
 }
 
 function playAudio(text) {
     if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); // Stoppe net toute lecture en cours
+        window.speechSynthesis.cancel(); 
         
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'en-US';
         utterance.rate = audioSpeed;
 
-        // Si la voix n'a pas pu être choisie au démarrage, on fait une tentative de secours
         if (!preferredVoice) initVoices();
 
         if (preferredVoice) {
@@ -183,25 +175,21 @@ function playAudio(text) {
 
         window.speechSynthesis.speak(utterance);
     } else {
-        // Fallback ultime si l'appareil ne supporte aucune synthèse vocale native
         const encodedText = encodeURIComponent(text.toLowerCase());
         const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&q=${encodedText}`;
         const audio = new Audio(audioUrl);
         audio.playbackRate = audioSpeed;
-        audio.play().catch(e => console.log("Audio playback failed:", e));
+        audio.play().catch(e => console.log("Audio play error:", e));
     }
 }
-
 
 function playSoundEffect(type) {
     if (!window.AudioContext && !window.webkitAudioContext) return;
     
-    // Initialisation paresseuse au premier clic utilisateur
     if (!globalAudioCtx) {
         globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
     }
     
-    // Sort de la mise en veille si le navigateur avait bloqué le flux audio
     if (globalAudioCtx.state === 'suspended') {
         globalAudioCtx.resume();
     }
@@ -231,11 +219,11 @@ function triggerConfetti() {
         const confetti = document.createElement('div');
         confetti.className = 'confetti';
         confetti.style.left = Math.random() * 100 + 'vw';
-        confetti.style.backgroundColor = ['#F58634', '#52B788', '#1C3D5A', '#FFD166'][Math.floor(Math.random() * 4)];
-        confetti.style.transform = `scale(${Math.random() * 0.8 + 0.5})`;
-        confetti.style.animationDelay = Math.random() * 1.2 + 's';
+        confetti.style.backgroundColor = ['#FF5A36', '#10B981', '#6366F1', '#FBBF24', '#EC4899'][Math.floor(Math.random() * 5)];
+        confetti.style.transform = `scale(${Math.random() * 0.8 + 0.6})`;
+        confetti.style.animationDelay = Math.random() * 1.0 + 's';
         document.body.appendChild(confetti);
-        setTimeout(() => confetti.remove(), 4000);
+        setTimeout(() => confetti.remove(), 3500);
     }
 }
 
@@ -256,7 +244,7 @@ function getUserPlayerLevel() {
     return Math.floor(totalPoints / 150) + 1;
 }
 
-// --- ADAPTATION DES TITRES (Potager) ---
+// --- ADAPTATION DES TITRES (Potager Gamifié) ---
 function updateLevelAndTitle() {
     const pLevel = getUserPlayerLevel();
     const levelEl = document.getElementById('user-level');
@@ -264,32 +252,32 @@ function updateLevelAndTitle() {
     
     if (levelEl) levelEl.innerText = pLevel;
 
-    let title = "Novice des Légumes";
-    if (pLevel >= 2) title = "Apprenti Potager";
-    if (pLevel >= 3) title = "Jardinier Connaisseur";
+    let title = "Novice du Jardin 🎯";
+    if (pLevel >= 2) title = "Apprenti Potager 🌿";
+    if (pLevel >= 3) title = "Jardinier Elite 🛡️";
     if (pLevel >= 5) {
-        title = "Expert Maraîcher";
+        title = "Expert Maraîcher 👑";
         checkAndUnlockBadge("polyglotte"); 
     }
-    if (pLevel >= 10) title = "Maître des Potagers";
+    if (pLevel >= 10) title = "Maître Suprême 👾";
 
     if (titleEl) titleEl.innerText = title;
     if (typeof updateLevelLockUI === 'function') updateLevelLockUI();
 }
 
-// --- MODULE DARK MODE (AJOUTÉ) ---
+// --- MODULE DARK MODE ---
 function toggleDarkMode() {
     const isDark = document.documentElement.classList.toggle('dark');
     localStorage.setItem('oe_dark_mode', isDark);
     const icon = document.getElementById('theme-icon');
     if (icon) {
-        icon.className = isDark ? "fa-solid fa-sun text-yellow-300" : "fa-solid fa-moon text-yellow-300";
+        icon.className = isDark ? "fa-solid fa-sun text-yellow-300 text-base" : "fa-solid fa-moon text-yellow-300 text-base";
     }
 }
 
-// --- RÉINITIALISATION DES STATISTIQUES (AJOUTÉ) ---
+// --- RÉINITIALISATION DES STATISTIQUES ---
 function resetStats() {
-    if (confirm("Êtes-vous sûr de vouloir réinitialiser toutes vos statistiques et votre progression Potager ?")) {
+    if (confirm("Es-tu sûr de vouloir réinitialiser toute ta progression et tes trophées ? 🔥")) {
         const keysToRemove = ['oe_total_points_veg', 'oe_high_quiz_veg', 'oe_high_speak_veg', 'oe_high_timeattack_veg', 'oe_max_streak_veg', 'oe_fav_veg', 'oe_error_history_veg', 'oe_unlocked_badges_veg'];
         keysToRemove.forEach(key => localStorage.removeItem(key));
         totalPoints = 0; highScores = { quiz: 0, speak: 0, timeattack: 0 }; maxStreak = 0; currentStreak = 0; errorHistory = []; unlockedBadges = []; favoriteFruits = [];
@@ -304,7 +292,7 @@ function resetStats() {
         if (typeof updateFlashcard === 'function') updateFlashcard();
         if (typeof renderBadgesUI === 'function') renderBadgesUI();
         if (typeof renderErrorHistory === 'function') renderErrorHistory();
-        alert("Statistiques Potager réinitialisées !");
+        alert("Reset effectué ! Prêt à repartir à zéro ? 😉");
     }
 }
 
@@ -330,7 +318,7 @@ function loadStats() {
     if (localStorage.getItem('oe_dark_mode') === 'true') {
         document.documentElement.classList.add('dark');
         const icon = document.getElementById('theme-icon');
-        if (icon) icon.className = "fa-solid fa-sun text-yellow-300";
+        if (icon) icon.className = "fa-solid fa-sun text-yellow-300 text-base";
     }
     const totalPointsEl = document.getElementById('total-points');
     if (totalPointsEl) totalPointsEl.innerText = totalPoints;
