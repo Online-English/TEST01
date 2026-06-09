@@ -11,7 +11,7 @@ const fruitsData = [
     { en: "Garlic", fr: "Ail", emoji: "🧄", level: 1 },
     { en: "Corn", fr: "Maïs", emoji: "🌽", level: 1 },
     { en: "Pea", fr: "Petit pois", emoji: "🫛", level: 1 },
-    { en: "Pumpkin", fr: "Citronnelle / Potiron", emoji: "🎃", level: 1 },
+    { en: "Pumpkin", fr: "Potiron", emoji: "🎃", level: 1 },
     { en: "Spinach", fr: "Épinard", emoji: "🍃", level: 1 },
     { en: "Mushroom", fr: "Champignon", emoji: "🍄", level: 1 },
     { en: "Pepper", fr: "Poivron", emoji: "🫑", level: 1 },
@@ -81,10 +81,10 @@ let selectedVocabularyLevel = 1;
 
 // --- CONFIGURATION DES BADGES ---
 const badgesDatabase = [
-    { id: "first_perfect", title: "Sans Faute ! 🏆", desc: "Faire un parfait 10/10 en Session Quiz", icon: "🏅", color: "bg-gradient-to-tr from-amber-400 to-yellow-500" },
-    { id: "streak_15", title: "Inarrêtable ! 🔥", desc: "Atteindre une série folle de 15 bonnes réponses", icon: "⚡", color: "bg-gradient-to-tr from-orange-500 to-red-500" },
-    { id: "time_20", title: "Chasseur de Chrono ⏱️", desc: "Valider 20 points ou plus en Time Attack", icon: "🔮", color: "bg-gradient-to-tr from-cyan-400 to-brandBlue" },
-    { id: "polyglotte", title: "Maraîcher Pro 🌿", desc: "Débloquer le niveau 2 de vocabulaire", icon: "👑", color: "bg-gradient-to-tr from-purple-500 to-pink-500" }
+    { id: "first_perfect", title: "Sans Faute !", desc: "Faire un 10/10 en QCM", icon: "🏅", color: "bg-yellow-400" },
+    { id: "streak_15", title: "Inarrêtable", desc: "Atteindre 15 bonnes réponses de suite", icon: "🔥", color: "bg-brandPink" },
+    { id: "time_20", title: "Chrono Master", desc: "Marquer 20 points en Time Attack", icon: "⚡", color: "bg-cyan-400" },
+    { id: "polyglotte", title: "Styliste Pro", desc: "Débloquer la ligue Niveau 2", icon: "👑", color: "bg-brandPurple" }
 ];
 
 // --- ALGORITHME DE RÉPÉTITION ESPACÉE ---

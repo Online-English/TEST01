@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>online-english.be - Vocabulaire des Légumes</title>
+    <title>online-english.be - Vocabulaire des Vêtements</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
@@ -12,10 +12,10 @@
             theme: {
                 extend: {
                     colors: {
-                        brandOrange: '#FF5A36', // Corail / Orange Néon très vif
-                        brandBlue: '#6366F1',   // Violet Électrique / Indigo moderne
-                        brandGreen: '#10B981',  // Vert Menthe ultra frais
-                        brandDarkBg: '#0B0F19', // Fond sombre style Cyber
+                        brandPurple: '#6366F1',   /* Violet Électrique */
+                        brandPink: '#FF477E',     /* Rose / Corail Néon */
+                        brandGreen: '#10B981',    /* Vert Émeraude Flash */
+                        brandDark: '#0F172A',
                     }
                 }
             }
@@ -30,10 +30,37 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         
-        /* Animation Confettis améliorée */
+        /* Boutons style Gaming / 3D */
+        .btn-3d-purple {
+            box-shadow: 0 4px 0 0 #4F46E5;
+            transition: all 0.1s ease;
+        }
+        .btn-3d-purple:active {
+            transform: translateY(4px);
+            box-shadow: 0 0px 0 0 #4F46E5;
+        }
+        .btn-3d-pink {
+            box-shadow: 0 4px 0 0 #E11D48;
+            transition: all 0.1s ease;
+        }
+        .btn-3d-pink:active {
+            transform: translateY(4px);
+            box-shadow: 0 0px 0 0 #E11D48;
+        }
+
+        /* Animation Pop pour les cartes */
+        .pop-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .pop-card:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Confettis améliorés */
         .confetti {
             position: fixed; width: 12px; height: 12px; z-index: 100;
-            animation: fall 2.5s linear forwards;
+            border-radius: 3px;
+            animation: fall 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
         }
         @keyframes fall {
             0% { transform: translateY(-5vh) rotate(0deg); opacity: 1; }
@@ -41,238 +68,244 @@
         }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-900 dark:bg-brandDarkBg dark:text-gray-100 font-sans min-h-screen flex flex-col transition-colors duration-300 selection:bg-brandBlue/30">
+<body class="bg-indigo-50/50 text-slate-800 dark:bg-slate-900 dark:text-gray-100 font-sans min-h-screen flex flex-col transition-colors duration-200">
 
-    <header class="bg-gradient-to-r from-brandBlue via-purple-600 to-brandOrange text-white p-4 shadow-xl shadow-indigo-500/10 sticky top-0 z-50">
+    <header class="bg-brandPurple text-white p-4 shadow-lg border-b-4 border-indigo-700 sticky top-0 z-50 dark:bg-slate-950 dark:border-slate-800">
         <div class="container mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
             <div class="flex items-center justify-between w-full sm:w-auto gap-4">
                 <h1 class="text-2xl font-black tracking-wider flex items-center gap-2 drop-shadow-md">
-                    <span class="text-yellow-300 animate-bounce"><i class="fa-solid fa-carrot"></i></span> online-english.be
+                    <span class="text-brandPink animate-bounce"><i class="fa-solid fa-shirt"></i></span> ONLINE-ENGLISH
                 </h1>
-                <button onclick="toggleDarkMode()" class="p-2.5 bg-white/10 rounded-xl hover:bg-white/20 active:scale-95 transition text-sm backdrop-blur-sm border border-white/10">
-                    <i id="theme-icon" class="fa-solid fa-moon text-yellow-300 text-base"></i>
+                <button onclick="toggleDarkMode()" class="p-2.5 bg-white/10 rounded-xl hover:bg-white/20 transition text-sm border border-white/20 shadow-inner">
+                    <i id="theme-icon" class="fa-solid fa-moon text-yellow-300"></i>
                 </button>
             </div>
             
-            <div class="flex flex-wrap items-center gap-2.5 justify-center">
-                <div class="bg-slate-900/40 backdrop-blur-sm text-white px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wide border border-white/10">
-                    <span id="user-title" class="text-yellow-300">Novice des Légumes</span> <span class="opacity-60">|</span> Niv.<span id="user-level">1</span>
+            <div class="flex flex-wrap items-center gap-3 justify-center">
+                <div class="bg-gradient-to-r from-violet-600 to-indigo-600 text-white px-4 py-1.5 rounded-2xl text-xs font-black shadow border border-indigo-400 uppercase tracking-wide">
+                    <span id="user-title">Novice des Vêtements</span> <span class="bg-white/20 px-2 py-0.5 rounded ml-1">Niv.<span id="user-level">1</span></span>
                 </div>
-                <div class="bg-brandGreen text-white px-3.5 py-1.5 rounded-xl text-sm font-black flex items-center gap-1.5 shadow-lg shadow-brandGreen/20 border border-green-400/20">
+                <div class="bg-brandGreen text-white px-4 py-1.5 rounded-2xl text-sm font-black flex items-center gap-1.5 shadow border border-emerald-500">
                     <i class="fa-solid fa-star text-yellow-300 animate-pulse"></i> <span id="total-points">0</span> XP
                 </div>
-                <div id="streak-badge" class="bg-brandOrange text-white px-3.5 py-1.5 rounded-xl text-sm font-black flex items-center gap-1.5 shadow-lg shadow-brandOrange/20 border border-orange-400/20">
-                    <i class="fa-solid fa-fire text-yellow-300"></i> <span id="streak-count">0</span>
+                <div id="streak-badge" class="bg-brandPink text-white px-4 py-1.5 rounded-2xl text-sm font-black flex items-center gap-1.5 shadow border border-rose-500">
+                    <i class="fa-solid fa-fire text-yellow-200"></i> <span id="streak-count">0</span> 🔥
                 </div>
             </div>
         </div>
     </header>
 
-    <nav class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 overflow-x-auto whitespace-nowrap scrollbar-none sticky top-[120px] sm:top-[72px] z-40 shadow-sm transition-all">
-        <div class="flex justify-start md:justify-center p-2.5 gap-2 container mx-auto" id="navigation-tabs">
-            <button onclick="switchTab(event, 'dict')" class="tab-btn bg-brandBlue text-white px-4 py-2.5 rounded-xl font-bold text-sm shadow-md shadow-brandBlue/20 transform active:scale-95 transition-all">
+    <nav class="bg-white dark:bg-slate-800 border-b-2 border-gray-200 dark:border-slate-700 overflow-x-auto whitespace-nowrap sticky top-[122px] sm:top-[76px] z-40 shadow-sm scrollbar-none">
+        <div class="flex justify-start md:justify-center p-2.5 gap-2 container mx-auto">
+            <button onclick="switchTab(event, 'dict')" class="tab-btn bg-brandPurple text-white px-5 py-2.5 rounded-xl font-bold text-sm transition shadow-sm">
                 <i class="fa-solid fa-book-open mr-1.5"></i> Dico
             </button>
-            <button onclick="switchTab(event, 'flash')" class="tab-btn bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-gray-200 px-4 py-2.5 rounded-xl font-bold text-sm transform hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-all">
+            <button onclick="switchTab(event, 'flash')" class="tab-btn bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-gray-200 px-5 py-2.5 rounded-xl font-bold text-sm transition hover:bg-slate-200">
                 <i class="fa-solid fa-clone mr-1.5"></i> Flashcards
             </button>
-            <button onclick="switchTab(event, 'quiz')" class="tab-btn bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-gray-200 px-4 py-2.5 rounded-xl font-bold text-sm transform hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-all">
+            <button onclick="switchTab(event, 'quiz')" class="tab-btn bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-gray-200 px-5 py-2.5 rounded-xl font-bold text-sm transition hover:bg-slate-200">
                 <i class="fa-solid fa-circle-question mr-1.5"></i> Quiz
             </button>
-            <button onclick="switchTab(event, 'speak')" class="tab-btn bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-gray-200 px-4 py-2.5 rounded-xl font-bold text-sm transform hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-all">
-              <i class="fa-solid fa-microphone mr-1.5"></i> Parlé
+            <button onclick="switchTab(event, 'speak')" class="tab-btn bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-gray-200 px-5 py-2.5 rounded-xl font-bold text-sm transition hover:bg-slate-200">
+                <i class="fa-solid fa-microphone mr-1.5"></i> Speak
             </button>
-            <button onclick="switchTab(event, 'match')" class="tab-btn bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-gray-200 px-4 py-2.5 rounded-xl font-bold text-sm transform hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-all">
-                <i class="fa-solid fa-puzzle-piece mr-1.5"></i> Matching
+            <button onclick="switchTab(event, 'match')" class="tab-btn bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-gray-200 px-5 py-2.5 rounded-xl font-bold text-sm transition hover:bg-slate-200">
+                <i class="fa-solid fa-puzzle-piece mr-1.5"></i> Match
             </button>
-            <button onclick="switchTab(event, 'stats')" class="tab-btn bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-gray-200 px-4 py-2.5 rounded-xl font-bold text-sm transform hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-all">
-                <i class="fa-solid fa-chart-simple mr-1.5"></i> Stats & Badges
+            <button onclick="switchTab(event, 'stats')" class="tab-btn bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-gray-200 px-5 py-2.5 rounded-xl font-bold text-sm transition hover:bg-slate-200">
+                <i class="fa-solid fa-trophy mr-1.5"></i> Stats
             </button>
         </div>
     </nav>
 
     <main class="container mx-auto max-w-xl p-4 flex-grow mb-16">
 
-        <div class="mb-5 bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800">
-            <label class="block text-[11px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2.5 flex items-center gap-1.5"><i class="fa-solid fa-layer-group text-brandBlue"></i> Liste active :</label>
-            <div class="grid grid-cols-3 gap-2.5" id="vocab-level-selector">
-                <button onclick="setVocabLevel(1)" id="btn-vlevel-1" class="p-2.5 rounded-xl font-extrabold text-xs bg-brandBlue text-white border border-brandBlue shadow-lg shadow-brandBlue/20 transform active:scale-95 transition-all">Niv.1 (20)</button>
-                <button onclick="setVocabLevel(2)" id="btn-vlevel-2" class="p-2.5 rounded-xl font-extrabold text-xs bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600 border border-slate-200 dark:border-slate-800 cursor-not-allowed flex items-center justify-center gap-1.5 transition-all" disabled><i class="fa-solid fa-lock text-[11px]"></i> Niv.2</button>
-                <button onclick="setVocabLevel(3)" id="btn-vlevel-3" class="p-2.5 rounded-xl font-extrabold text-xs bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600 border border-slate-200 dark:border-slate-800 cursor-not-allowed flex items-center justify-center gap-1.5 transition-all" disabled><i class="fa-solid fa-lock text-[11px]"></i> Niv.3</button>
+        <div class="mb-5 bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-md border-2 border-slate-100 dark:border-slate-700">
+            <label class="block text-xs font-black uppercase tracking-wider text-slate-400 mb-2.5 flex items-center gap-1">
+                <i class="fa-solid fa-layer-group text-brandPurple"></i> Choisis ton arène :
+            </label>
+            <div class="grid grid-cols-3 gap-2" id="vocab-level-selector">
+                <button onclick="setVocabLevel(1)" id="btn-vlevel-1" class="p-2.5 rounded-xl font-black text-xs bg-brandPurple text-white border-b-4 border-indigo-700 transition">Niveau 1</button>
+                <button onclick="setVocabLevel(2)" id="btn-vlevel-2" class="p-2.5 rounded-xl font-black text-xs bg-slate-100 text-slate-400 dark:bg-slate-700 dark:text-slate-500 border cursor-not-allowed flex items-center justify-center gap-1 transition" disabled><i class="fa-solid fa-lock text-[10px]"></i> Niveau 2</button>
+                <button onclick="setVocabLevel(3)" id="btn-vlevel-3" class="p-2.5 rounded-xl font-black text-xs bg-slate-100 text-slate-400 dark:bg-slate-700 dark:text-slate-500 border cursor-not-allowed flex items-center justify-center gap-1 transition" disabled><i class="fa-solid fa-lock text-[10px]"></i> Niveau 3</button>
             </div>
-            <p id="vocab-unlock-hint" class="text-[11px] text-slate-400 dark:text-slate-500 mt-2 italic font-medium">Astuce : Atteins le niveau joueur 5 pour débloquer la suite !</p>
+            <p id="vocab-unlock-hint" class="text-[11px] text-slate-400 mt-2 font-medium italic text-center"></p>
         </div>
 
-        <div class="mb-5 bg-white dark:bg-slate-900 p-3.5 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-sm">
+        <div class="mb-5 bg-white dark:bg-slate-800 p-3.5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3 text-sm font-bold">
             <div class="flex items-center gap-2">
-                <label class="font-bold text-slate-500 dark:text-gray-400">Vitesse :</label>
-                <button id="speed-normal" onclick="setAudioSpeed(1.0)" class="px-2.5 py-1 bg-brandBlue text-white rounded-lg font-black transition-all transform active:scale-95">1x</button>
-                <button id="speed-slow" onclick="setAudioSpeed(0.6)" class="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-gray-300 rounded-lg font-bold flex items-center gap-1 transition-all transform active:scale-95">🐢 0.6x</button>
+                <span class="text-slate-500">Vitesse :</span>
+                <button id="speed-normal" onclick="setAudioSpeed(1.0)" class="px-3 py-1 bg-brandPurple text-white rounded-lg">1.0x</button>
+                <button id="speed-slow" onclick="setAudioSpeed(0.6)" class="px-3 py-1 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center gap-1">🐢 0.6x</button>
             </div>
             <div id="autoplay-container" class="hidden flex items-center gap-2">
-                <input type="checkbox" id="autoplay-checkbox" class="w-4 h-4 text-brandOrange border-slate-300 dark:border-slate-700 rounded focus:ring-brandOrange bg-slate-50 dark:bg-slate-800">
-                <label for="autoplay-checkbox" class="font-bold text-slate-600 dark:text-gray-300 cursor-pointer text-xs uppercase tracking-wide">Lecture auto</label>
+                <input type="checkbox" id="autoplay-checkbox" class="w-4 h-4 text-brandPurple border-gray-300 rounded focus:ring-brandPurple">
+                <label for="autoplay-checkbox" class="cursor-pointer text-slate-500">Lecture auto</label>
             </div>
         </div>
 
         <section id="tab-dict" class="tab-content active space-y-4">
-            <div class="flex gap-2.5">
+            <div class="flex gap-2">
                 <div class="relative flex-grow">
-                    <input type="text" id="search-input" oninput="filterWords()" placeholder="Rechercher un légume..." class="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-semibold focus:outline-none focus:border-brandBlue shadow-sm transition-all text-slate-800 dark:text-white">
+                    <input type="text" id="search-input" oninput="filterWords()" placeholder="Rechercher un vêtement..." class="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-bold focus:outline-none focus:border-brandPurple dark:focus:border-brandPurple transition shadow-inner">
                     <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-4 text-slate-400"></i>
                 </div>
-                <button onclick="toggleDirectionDico()" id="direction-filter-btn" class="px-3.5 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-2xl text-brandBlue dark:text-indigo-400 hover:border-brandBlue transition-all font-black text-xs flex items-center gap-1.5 shadow-sm active:scale-95">
+                <button onclick="toggleDirectionDico()" id="direction-filter-btn" class="px-3 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl text-brandPurple dark:text-indigo-400 hover:border-brandPurple transition font-black text-xs flex items-center gap-1 shadow-sm">
                     <i class="fa-solid fa-right-left"></i> <span id="direction-label">FR ➔ EN</span>
                 </button>
-                <button onclick="toggleFavFilter()" id="fav-filter-btn" class="px-4 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 hover:text-yellow-500 transition-all shadow-sm active:scale-95">
-                    <i class="fa-solid fa-star text-xl"></i>
+                <button onclick="toggleFavFilter()" id="fav-filter-btn" class="px-4 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl text-slate-300 hover:text-yellow-400 transition shadow-sm">
+                    <i class="fa-solid fa-star text-lg"></i>
                 </button>
             </div>
-            <div id="dict-list" class="grid grid-cols-1 gap-3.5"></div>
+            <div id="dict-list" class="grid grid-cols-1 gap-3"></div>
         </section>
 
         <section id="tab-flash" class="tab-content hidden space-y-6 text-center">
-            <div class="flex justify-center gap-2">
-                <button id="slideshow-btn" onclick="toggleSlideshow()" class="bg-brandGreen text-white px-5 py-2.5 rounded-2xl text-sm font-black shadow-lg shadow-brandGreen/20 transition-all hover:scale-105 active:scale-95">
-                    <i class="fa-solid fa-play mr-1.5"></i> Lancer le Diaporama
+            <div class="flex justify-center">
+                <button id="slideshow-btn" onclick="toggleSlideshow()" class="bg-brandGreen text-white px-5 py-2.5 rounded-xl text-sm font-black shadow-md border-b-4 border-emerald-600 transition active:scale-95">
+                    <i class="fa-solid fa-play mr-1.5"></i> Mode Diaporama
                 </button>
             </div>
-            <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Tapote la carte pour révéler la traduction</p>
-            <div class="flex justify-center">
-                <div id="main-flashcard" class="flashcard w-76 h-96 cursor-pointer" onclick="this.classList.toggle('flipped')">
-                    <div class="flashcard-inner relative w-full h-full shadow-2xl shadow-indigo-500/5 rounded-3xl border-4 border-brandBlue/20 dark:border-slate-800">
-                        <div class="flashcard-front absolute w-full h-full bg-white dark:bg-slate-900 rounded-[20px] flex flex-col justify-between p-6">
-                            <span class="text-7xl my-auto drop-shadow-sm" id="flash-emoji">🥕</span>
-                            <div>
-                                <h3 class="text-4xl font-black text-slate-800 dark:text-white tracking-wide" id="flash-en">Carrot</h3>
-                                <button onclick="event.stopPropagation(); playAudio(document.getElementById('flash-en').innerText)" class="mt-4 bg-brandBlue text-white p-3 rounded-2xl w-12 h-12 hover:bg-brandOrange hover:scale-110 active:scale-90 transition-all shadow-md shadow-brandBlue/30">
+            <p class="text-xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Clique sur la carte pour la retourner</p>
+            
+            <div class="flex justify-center my-2">
+                <div id="main-flashcard" class="flashcard w-72 h-96 cursor-pointer" onclick="this.classList.toggle('flipped')">
+                    <div class="flashcard-inner relative w-full h-full shadow-xl rounded-3xl border-4 border-white dark:border-slate-800">
+                        <div class="flashcard-front absolute w-full h-full bg-white dark:bg-slate-800 rounded-3xl flex flex-col justify-between p-6 border border-slate-100 dark:border-slate-700">
+                            <span class="text-7xl my-auto drop-shadow-md" id="flash-emoji">👕</span>
+                            <div class="space-y-3">
+                                <h3 class="text-4xl font-black text-brandPurple dark:text-white tracking-wide" id="flash-en">Shirt</h3>
+                                <button onclick="event.stopPropagation(); playAudio(document.getElementById('flash-en').innerText)" class="bg-brandPurple text-white p-3 rounded-2xl w-12 h-12 hover:bg-brandPink transition shadow-md">
                                     <i class="fa-solid fa-volume-high text-lg"></i>
                                 </button>
                             </div>
                         </div>
-                        <div class="flashcard-back absolute w-full h-full bg-gradient-to-br from-brandBlue to-purple-700 text-white rounded-[20px] flex flex-col justify-center items-center p-6 shadow-inner">
-                            <span class="text-xs uppercase tracking-widest text-yellow-300 font-black mb-3">Traduction</span>
-                            <h3 class="text-4xl font-black drop-shadow-md" id="flash-fr">Carotte</h3>
+                        <div class="flashcard-back absolute w-full h-full bg-gradient-to-br from-brandPurple to-indigo-700 text-white rounded-3xl flex flex-col justify-center items-center p-6">
+                            <span class="text-xs uppercase tracking-widest text-brandPink font-black mb-3 bg-white/10 px-3 py-1 rounded-full border border-white/10">Traduction</span>
+                            <h3 class="text-4xl font-black drop-shadow-md" id="flash-fr">Chemise</h3>
                         </div>
                     </div>
                 </div>
             </div>
+            
             <div class="flex justify-center gap-4">
-                <button id="flash-prev-btn" onclick="prevFlashcard()" class="bg-slate-200 dark:bg-slate-800 p-4 rounded-2xl hover:bg-brandOrange hover:text-white transition-all w-16 shadow-md active:scale-95"><i class="fa-solid fa-arrow-left text-lg"></i></button>
-                <button id="flash-next-btn" onclick="nextFlashcard()" class="bg-brandBlue text-white p-4 rounded-2xl hover:bg-brandOrange font-black tracking-wide transition-all w-36 shadow-lg shadow-brandBlue/20 active:scale-95">Suivant</button>
+                <button id="flash-prev-btn" onclick="prevFlashcard()" class="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 p-3.5 rounded-2xl hover:bg-brandPink hover:text-white dark:hover:bg-brandPink text-slate-600 dark:text-white transition w-20 shadow-sm font-bold"><i class="fa-solid fa-arrow-left text-lg"></i></button>
+                <button id="flash-next-btn" onclick="nextFlashcard()" class="bg-brandPurple text-white p-3.5 rounded-2xl border-b-4 border-indigo-800 transition w-36 font-black tracking-wide">SUIVANT</button>
             </div>
         </section>
 
         <section id="tab-quiz" class="tab-content hidden space-y-4">
-            <div id="quiz-mode-menu" class="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-800 text-center space-y-4">
-                <p class="text-sm font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Prêt pour le défi ? Choisis ton mode :</p>
-                <div class="grid grid-cols-1 gap-3.5">
-                    <button onclick="launchStandardQuiz()" class="bg-brandBlue text-white p-4.5 rounded-2xl font-black text-sm shadow-xl shadow-brandBlue/20 transform hover:scale-[1.02] active:scale-98 transition-all flex items-center justify-center gap-2.5">
+            <div id="quiz-mode-menu" class="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-xl border-2 border-slate-100 dark:border-slate-700 text-center space-y-4">
+                <h3 class="text-lg font-black text-slate-700 dark:text-white uppercase tracking-wide">Prêt pour le défi ?</h3>
+                <p class="text-sm font-bold text-slate-400">Choisis ton mode de jeu pour gagner de l'XP :</p>
+                <div class="grid grid-cols-1 gap-3.5 pt-2">
+                    <button onclick="launchStandardQuiz()" class="btn-3d-purple bg-brandPurple text-white p-4 rounded-2xl font-black text-sm tracking-wider uppercase flex items-center justify-center gap-2">
                         <i class="fa-solid fa-graduation-cap text-lg"></i> Quiz Classique (10 mots)
                     </button>
-                    <button onclick="launchTimeAttack()" class="bg-gradient-to-r from-red-500 to-brandOrange text-white p-4.5 rounded-2xl font-black text-sm shadow-xl shadow-brandOrange/20 transform hover:scale-[1.02] active:scale-98 transition-all flex items-center justify-center gap-2.5">
+                    <button onclick="launchTimeAttack()" class="btn-3d-pink bg-brandPink text-white p-4 rounded-2xl font-black text-sm tracking-wider uppercase flex items-center justify-center gap-2">
                         <i class="fa-solid fa-stopwatch text-lg animate-pulse"></i> Contre-la-montre (60s)
                     </button>
                 </div>
             </div>
 
             <div id="quiz-classic-zone" class="hidden space-y-4">
-                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-md border border-slate-100 dark:border-slate-800 flex justify-between items-center">
-                    <span class="font-black text-sm uppercase tracking-wide text-brandBlue">Question <span id="quiz-current">1</span>/10</span>
-                    <span class="bg-brandGreen/10 text-brandGreen font-black text-xs px-3 py-1.5 rounded-xl border border-brandGreen/20">Score: <span id="quiz-score">0</span>/10</span>
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow border border-slate-100 dark:border-slate-700 flex justify-between items-center font-black text-xs tracking-wider uppercase">
+                    <span class="text-brandPurple">Question <span id="quiz-current" class="text-lg">1</span>/10</span>
+                    <span class="text-brandGreen">Score : <span id="quiz-score" class="text-lg">0</span>/10</span>
                 </div>
-                <div class="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-xl border-2 border-brandBlue/10 dark:border-slate-800 text-center space-y-2">
-                    <p class="text-xs text-slate-400 font-black uppercase tracking-widest">Traduisez le mot suivant :</p>
-                    <h2 class="text-4xl font-black text-slate-800 dark:text-white tracking-wide drop-shadow-sm" id="quiz-question">Potato</h2>
+                <div class="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-lg border-2 border-slate-100 dark:border-slate-700 text-center space-y-3">
+                    <p class="text-xs text-slate-400 font-black uppercase tracking-widest">Traduis ce mot :</p>
+                    <h2 class="text-4xl font-black text-brandPurple dark:text-white tracking-wide" id="quiz-question">Shirt</h2>
                 </div>
                 <div id="quiz-options" class="grid grid-cols-1 gap-3"></div>
             </div>
 
             <div id="quiz-timeattack-zone" class="hidden space-y-4">
-                <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-md border border-slate-100 dark:border-slate-800 flex justify-between items-center">
-                    <span class="font-black text-sm text-red-500 flex items-center gap-2"><i class="fa-solid fa-clock text-base animate-pulse"></i> TEMPS : <span id="ta-timer" class="text-xl">60</span>s</span>
-                    <span class="bg-brandOrange/10 text-brandOrange font-black text-xs px-3 py-1.5 rounded-xl border border-brandOrange/20">VALIDÉS : <span id="ta-score" class="text-xl">0</span></span>
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow border border-slate-100 dark:border-slate-700 flex justify-between items-center font-black text-sm uppercase">
+                    <span class="text-brandPink flex items-center gap-2"><i class="fa-solid fa-clock text-lg"></i> Chrono : <span id="ta-timer" class="text-xl font-black">60</span>s</span>
+                    <span class="text-brandPurple">Validés : <span id="ta-score" class="text-xl font-black">0</span></span>
                 </div>
-                <div class="bg-gradient-to-r from-red-500/10 to-brandOrange/10 bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-xl border-2 border-brandOrange/30 text-center space-y-2">
-                    <p class="text-xs text-brandOrange font-black uppercase tracking-widest animate-pulse">Vite, ça tourne ! 🔥</p>
-                    <h2 class="text-4xl font-black text-slate-800 dark:text-white tracking-wide" id="ta-question">Carrot</h2>
+                <div class="bg-gradient-to-r from-rose-500/10 to-brandPink/5 bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-lg border-2 border-brandPink/30 text-center space-y-3">
+                    <p class="text-xs text-brandPink font-black uppercase tracking-widest">Le plus vite possible ! 🔥</p>
+                    <h2 class="text-4xl font-black text-slate-800 dark:text-white tracking-wide" id="ta-question">Chemise</h2>
                 </div>
                 <div id="ta-options" class="grid grid-cols-1 gap-3"></div>
             </div>
         </section>
 
         <section id="tab-speak" class="tab-content hidden space-y-4 text-center">
-            <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-md border border-slate-100 dark:border-slate-800 flex justify-between items-center">
-                <span class="font-black text-sm uppercase tracking-wide text-brandPurple">Oral & Prononciation</span>
-                <span class="bg-brandGreen/10 text-brandGreen font-black text-xs px-3 py-1.5 rounded-xl">Combo: <span id="speak-score">0</span></span>
+            <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow border border-slate-100 dark:border-slate-700 flex justify-between items-center font-black text-xs uppercase">
+                <span class="text-brandPurple">Défi Oral</span>
+                <span class="text-brandGreen">Réussis : <span id="speak-score" class="text-lg">0</span></span>
             </div>
-            <div class="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-xl border-2 border-brandBlue/5 dark:border-slate-800 space-y-6">
-                <p class="text-sm font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Regarde le légume et prononce son nom en anglais !</p>        
-                <div class="flex items-center justify-center gap-5 bg-slate-50 dark:bg-slate-950 p-5 rounded-2xl border border-slate-100 dark:border-slate-900 shadow-inner">
-                    <span class="text-7xl block drop-shadow-sm animate-pulse" id="speak-emoji">🥕</span>
-                    <h2 class="text-4xl font-black text-slate-800 dark:text-white tracking-wide" id="speak-prompt-fr">Carotte</h2>
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-lg border-2 border-slate-100 dark:border-slate-700 space-y-6">
+                <p class="text-slate-500 dark:text-slate-300 font-bold text-sm">Prononce son nom en <span class="font-black text-brandPink">Anglais</span> après avoir cliqué sur le micro :</p>        
+                <div class="flex items-center justify-center gap-4 bg-slate-50 dark:bg-slate-900/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-800">
+                    <span class="text-6xl drop-shadow" id="speak-emoji">👕</span>
+                    <h2 class="text-3xl font-black text-brandPurple dark:text-white tracking-wide" id="speak-prompt-fr">Chemise</h2>
                 </div>
 
-                <button id="mic-btn" onclick="startSpeechRecognition()" class="bg-gradient-to-tr from-brandOrange to-pink-500 text-white w-24 h-24 rounded-full text-4xl shadow-xl shadow-brandOrange/30 hover:scale-105 active:scale-95 transition-all mx-auto flex items-center justify-center relative border-4 border-white dark:border-slate-900">
+                <button id="mic-btn" onclick="startSpeechRecognition()" class="bg-brandPink text-white w-24 h-24 rounded-full text-3xl shadow-lg hover:scale-105 active:scale-95 transition mx-auto flex items-center justify-center relative border-b-4 border-rose-600">
                     <i class="fa-solid fa-microphone"></i>
-                    <span id="mic-pulse" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brandOrange opacity-75 hidden"></span>
+                    <span id="mic-pulse" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brandPink opacity-75 hidden"></span>
                 </button>
                 
-                <p id="speech-status" class="text-xs font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Clique sur le micro pour parler</p>
-                <div id="speech-result" class="hidden text-base font-bold p-3.5 rounded-2xl shadow-inner"></div>
+                <p id="speech-status" class="text-xs font-black text-slate-400 uppercase tracking-wider">Clique sur le micro pour parler</p>
+                <div id="speech-result" class="hidden text-sm font-bold p-3 rounded-xl border"></div>
             </div>
         </section>
 
         <section id="tab-match" class="tab-content hidden space-y-4">
-            <p class="text-xs text-center text-slate-400 dark:text-slate-500 font-black uppercase tracking-widest">Relie l'anglais (<span class="text-brandBlue">violet</span>) au français (<span class="text-brandOrange">orange</span>) !</p>
-            <div class="grid grid-cols-2 gap-3.5" id="matching-grid"></div>
-            <button onclick="initMatching()" class="w-full bg-slate-900 dark:bg-slate-800 text-white p-3.5 rounded-2xl font-black text-sm shadow-md transition-all active:scale-98 mt-3">⚡ Mélanger / Recommencer</button>
+            <p class="text-xs text-center text-slate-400 font-black uppercase tracking-wider">Associe le mot anglais (<span class="text-brandPurple">violet</span>) à sa traduction (<span class="text-brandPink">rose</span>)</p>
+            <div class="grid grid-cols-2 gap-3" id="matching-grid"></div>
+            <button onclick="initMatching()" class="w-full bg-brandPurple text-white p-3.5 rounded-2xl font-black tracking-wide uppercase shadow border-b-4 border-indigo-800 active:translate-y-1 active:border-b-0 transition-all mt-2">Mélanger les cartes 🔁</button>
         </section>
 
         <section id="tab-stats" class="tab-content hidden space-y-5">
-            <div class="grid grid-cols-3 gap-3 text-center">
-                <div class="bg-white dark:bg-slate-900 p-3.5 rounded-2xl shadow-md border-t-4 border-brandBlue">
-                    <span class="text-[10px] text-slate-400 dark:text-slate-500 block font-black uppercase tracking-wide">Top Quiz</span>
-                    <span class="text-2xl font-black text-slate-800 dark:text-white" id="stat-high-quiz">0</span><span class="text-xs text-slate-400">/10</span>
+            <div class="grid grid-cols-3 gap-3 text-center font-black">
+                <div class="bg-white dark:bg-slate-800 p-3 rounded-2xl shadow border-b-4 border-brandPurple">
+                    <span class="text-[10px] text-slate-400 block uppercase tracking-wider">Top Quiz</span>
+                    <span class="text-2xl font-black text-brandPurple dark:text-indigo-400" id="stat-high-quiz">0</span><span class="text-xs text-slate-400">/10</span>
                 </div>
-                <div class="bg-white dark:bg-slate-900 p-3.5 rounded-2xl shadow-md border-t-4 border-brandGreen">
-                    <span class="text-[10px] text-slate-400 dark:text-slate-500 block font-black uppercase tracking-wide">Top Oral</span>
-                    <span class="text-2xl font-black text-slate-800 dark:text-white" id="stat-high-speak">0</span>
+                <div class="bg-white dark:bg-slate-800 p-3 rounded-2xl shadow border-b-4 border-brandGreen">
+                    <span class="text-[10px] text-slate-400 block uppercase tracking-wider">Top Oral</span>
+                    <span class="text-2xl font-black text-brandGreen" id="stat-high-speak">0</span>
                 </div>
-                <div class="bg-white dark:bg-slate-900 p-3.5 rounded-2xl shadow-md border-t-4 border-red-500">
-                    <span class="text-[10px] text-slate-400 dark:text-slate-500 block font-black uppercase tracking-wide">Chrono</span>
-                    <span class="text-2xl font-black text-slate-800 dark:text-white" id="stat-high-timeattack">0</span>
+                <div class="bg-white dark:bg-slate-800 p-3 rounded-2xl shadow border-b-4 border-brandPink">
+                    <span class="text-[10px] text-slate-400 block uppercase tracking-wider">Chrono Run</span>
+                    <span class="text-2xl font-black text-brandPink" id="stat-high-timeattack">0</span>
                 </div>
             </div>
-            <div class="bg-gradient-to-r from-brandOrange to-pink-500 text-white p-4 rounded-2xl shadow-lg shadow-brandOrange/10 text-center">
-                <span class="text-xs font-black uppercase tracking-widest opacity-80 block">Plus longue série de victoires 🔥</span>
-                <span class="text-3xl font-black drop-shadow-sm" id="stat-max-streak">0</span>
+            
+            <div class="bg-white dark:bg-slate-800 p-3.5 rounded-2xl shadow text-center border border-slate-100 dark:border-slate-700 font-bold">
+                <span class="text-xs text-slate-400 block uppercase tracking-wider mb-0.5">Plus grande série de victoires</span>
+                <span class="text-2xl font-black text-brandPink" id="stat-max-streak">0</span> 🔥
             </div>
 
-            <div class="bg-white dark:bg-slate-900 p-5 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-800">
-                <h3 class="font-black text-xs text-slate-700 dark:text-white uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <i class="fa-solid fa-trophy text-yellow-400 text-sm"></i> Trophées & Badges débloqués
+            <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow border border-slate-100 dark:border-slate-700">
+                <h3 class="font-black text-xs text-brandPurple dark:text-white uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                    <i class="fa-solid fa-trophy text-yellow-400"></i> Succès & Badges Débloqués
                 </h3>
-                <div id="badges-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+                <div id="badges-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
             </div>
 
-            <div class="bg-white dark:bg-slate-900 p-5 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-800">
-                <h3 class="font-black text-xs text-red-500 uppercase tracking-widest mb-2 flex items-center gap-2">
-                    <i class="fa-solid fa-graduation-cap text-sm"></i> Zone d'Entraînement (Mots à revoir)
+            <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow border border-slate-100 dark:border-slate-700">
+                <h3 class="font-black text-xs text-red-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                    <i class="fa-solid fa-graduation-cap"></i> Boss de Fin (Mots à réviser)
                 </h3>
-                <p class="text-[11px] text-slate-400 dark:text-slate-500 mb-4 font-medium">Ces mots reviendront en priorité dans tes futurs Quiz pour t'aider à devenir imbattable !</p>
-                <div id="error-history-list" class="space-y-2.5 max-h-52 overflow-y-auto pr-1 text-sm"></div>
+                <p class="text-[11px] text-slate-400 mb-3 font-medium">Ces mots réapparaîtront en priorité pour te faire progresser.</p>
+                <div id="error-history-list" class="space-y-2 max-h-48 overflow-y-auto pr-1 text-sm"></div>
             </div>
 
-            <button onclick="resetStats()" class="w-full bg-red-50 dark:bg-red-950/20 text-red-500 border-2 border-dashed border-red-200 dark:border-red-900/40 p-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all hover:bg-red-100 dark:hover:bg-red-950/40 active:scale-98">
-                Réinitialiser ma progression
+            <button onclick="resetStats()" class="w-full bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400 border border-rose-200 dark:border-rose-900/40 p-3 rounded-xl text-xs font-black uppercase tracking-wider transition hover:bg-rose-100">
+                Réinitialiser ma partie ⚠️
             </button>
         </section>
 
     </main>
 
-    <footer class="bg-slate-900 text-slate-400 text-center py-5 text-xs mt-auto border-t border-brandOrange/20 dark:bg-black">
-        &copy; 2026 online-english.be - Tous droits réservés. Style Gaming Activé 🚀
+    <footer class="bg-brandPurple text-white/70 text-center py-4 text-xs mt-auto border-t-4 border-indigo-800 dark:bg-slate-950 dark:border-slate-900 font-bold tracking-wide">
+        &copy; 2026 online-english.be - PLAY TO LEARN
     </footer>
 
     <script src="script.js"></script>
