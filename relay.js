@@ -10,20 +10,24 @@ let currentSpeakItem = null, speakScore = 0;
 let selectedEnglishNode = null, selectedFrenchNode = null;
 let isProcessingMatch = false; 
 
+// VARIABLES DE CONTRE-LA-MONTRE
 let taTimerInterval = null;
-let taTimeout = null;
+let taTimeout = null; 
 let taTimeLeft = 60;
 let taScore = 0;
 let currentTAItem = null;
 
+// --- INITIALISATION DES COMPOSANTS AU DEMARRAGE ---
 window.onload = () => {
-    loadStats(); 
+    loadStats(); // Charge les données du localStorage via script.js
     
+    // Remplissage initial des scores dans l'interface
     document.getElementById('stat-high-quiz').innerText = highScores.quiz;
     document.getElementById('stat-high-speak').innerText = highScores.speak || 0;
     document.getElementById('stat-high-timeattack').innerText = highScores.timeattack || 0;
     document.getElementById('stat-max-streak').innerText = maxStreak;
     
+    // Force la vérification des cadenas et affichage initial
     updateLevelLockUI();
     renderDict();
     updateFlashcard();
@@ -31,66 +35,73 @@ window.onload = () => {
     renderErrorHistory();
 };
 
+// --- SELECTIONNEUR DE NIVEAU DE VOCABULAIRE ---
 function setVocabLevel(level) {
     selectedVocabularyLevel = parseInt(level);
     
+    // Réinitialise le style visuel de tous les boutons de niveau (style moderne)
     document.querySelectorAll('#vocab-level-selector button').forEach(btn => {
         if (!btn.disabled) {
-            btn.className = "p-3 rounded-xl font-extrabold text-xs bg-slate-900/60 text-slate-300 border border-slate-700 hover:border-brandPurple transition-all";
+            btn.className = "p-2.5 rounded-xl font-extrabold text-xs bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-transparent transition hover:border-brandPurple";
         }
     });
     
+    // Active le bouton cliqué
     const activeBtn = document.getElementById(`btn-vlevel-${level}`);
-    activeBtn.className = "p-3 rounded-xl font-extrabold text-xs bg-brandPurple text-white shadow-md shadow-brandPurple/20 border border-brandPurple transition-all";
+    activeBtn.className = "p-2.5 rounded-xl font-extrabold text-xs bg-brandPurple text-white shadow-md border border-brandPurple transition";
     
+    // Actualise les modules
     renderDict();
     updateFlashcard();
     resetQuizToMenu();
 }
 
 function updateLevelLockUI() {
-    const playerLevel = getUserPlayerLevel(); 
-    const btn2 = document.getElementById('btn-vlevel-2');
-    const btn3 = document.getElementById('btn-vlevel-3');
+    const playerLevel = getUserPlayerLevel();
     const hint = document.getElementById('vocab-unlock-hint');
+    if (!hint) return;
 
-    if (!btn2 || !btn3 || !hint) return; 
+    const levelsConfig = [
+        { level: 2, req: 3, label: "Aquatiques 🐬" },
+        { level: 3, req: 6, label: "Volants 🦅" },
+        { level: 4, req: 9, label: "Jungle 🦁" },
+        { level: 5, req: 12, label: "Sauvages 🐺" }
+    ];
 
-    if (playerLevel >= 5) {
-        btn2.disabled = false;
-        btn2.innerHTML = "🔒 Débloqué ! Niv.2";
-        if (selectedVocabularyLevel !== 2) {
-            btn2.className = "p-3 rounded-xl font-extrabold text-xs bg-slate-900/60 text-slate-300 border border-slate-700 hover:border-brandPurple transition-all";
+    levelsConfig.forEach(cfg => {
+        const btn = document.getElementById(`btn-vlevel-${cfg.level}`);
+        if (!btn) return;
+
+        if (playerLevel >= cfg.req) {
+            btn.disabled = false;
+            btn.innerHTML = cfg.label;
+            if (selectedVocabularyLevel !== cfg.level) {
+                btn.className = "p-2.5 rounded-xl font-extrabold text-xs bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-transparent transition hover:border-brandPurple";
+            }
+        } else {
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-lock text-[10px]"></i> Niv.${cfg.level}`;
+            btn.className = "p-2.5 rounded-xl font-extrabold text-xs bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600 border border-transparent cursor-not-allowed flex items-center justify-center gap-1 transition";
+            if (selectedVocabularyLevel === cfg.level) selectedVocabularyLevel = 1;
         }
+    });
+
+    if (playerLevel >= 12) {
+        hint.innerHTML = "🏆 Félicitations ! Tout le règne animal est accessible !";
     } else {
-        btn2.disabled = true;
-        btn2.innerHTML = '<i class="fa-solid fa-lock text-[10px]"></i> Niv.2 (40)';
-        btn2.className = "p-3 rounded-xl font-extrabold text-xs bg-slate-900/30 text-slate-600 border border-slate-800/80 cursor-not-allowed flex items-center justify-center gap-1 transition-all";
-        if (selectedVocabularyLevel === 2) selectedVocabularyLevel = 1; 
-    }
-    
-    if (playerLevel >= 10) {
-        btn3.disabled = false;
-        btn3.innerHTML = "⚡ Élite ! Niv.3";
-        if (selectedVocabularyLevel !== 3) {
-            btn3.className = "p-3 rounded-xl font-extrabold text-xs bg-slate-900/60 text-slate-300 border border-slate-700 hover:border-brandPurple transition-all";
+        const nextUnlock = levelsConfig.find(cfg => playerLevel < cfg.req);
+        if (nextUnlock) {
+            hint.innerHTML = `⚡ Passe au <b>Niveau Joueur ${nextUnlock.req}</b> pour débloquer les Animaux ${nextUnlock.label.split(' ')[0]} !`;
         }
-    } else {
-        btn3.disabled = true;
-        btn3.innerHTML = '<i class="fa-solid fa-lock text-[10px]"></i> Niv.3 (60)';
-        btn3.className = "p-3 rounded-xl font-extrabold text-xs bg-slate-900/30 text-slate-600 border border-slate-800/80 cursor-not-allowed flex items-center justify-center gap-1 transition-all";
-        if (selectedVocabularyLevel === 3) selectedVocabularyLevel = 1; 
     }
 
-    if (playerLevel >= 10) {
-        hint.innerHTML = "🎉 <span class='text-brandGreen font-bold'>GG ! Tout le pack émotionnel est débloqué !</span>";
-    } else if (playerLevel >= 5) {
-        hint.innerText = "🚀 Objectif : Atteins le niveau de compte 10 pour le pack Ultime !";
-    } else {
-        hint.innerText = "🔒 Bloqué : Passe niveau 5 pour le Pack Intermédiaire (Niv.2)";
+    if (selectedVocabularyLevel === 1) {
+        const btn1 = document.getElementById('btn-vlevel-1');
+        if (btn1) btn1.className = "p-2.5 rounded-xl font-extrabold text-xs bg-brandPurple text-white shadow-md border border-brandPurple transition";
     }
 }
 
+// --- INTERCEPTEUR DE CHANGEMENT D'ONGLET ---
 function switchTab(event, tabName) {
     stopSlideshow();
     stopTimeAttack();
@@ -102,12 +113,12 @@ function switchTab(event, tabName) {
 
     document.querySelectorAll('.tab-content').forEach(el => { el.classList.add('hidden'); el.classList.remove('active'); });
     document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.className = "tab-btn bg-slate-800 text-slate-300 border border-slate-700 px-4 py-2.5 rounded-xl font-bold text-sm transition-all hover:bg-slate-700 hover:text-white";
+        btn.className = "tab-btn bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-5 py-2.5 rounded-xl font-bold text-sm transition-all transform hover:scale-105";
     });
 
     const targetTab = document.getElementById(`tab-${tabName}`);
     targetTab.classList.remove('hidden'); targetTab.classList.add('active');
-    event.currentTarget.className = "tab-btn bg-brandPurple text-white px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-brandPurple/20 hover:scale-105 active:scale-95";
+    event.currentTarget.className = "tab-btn bg-brandPurple text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all transform shadow-md scale-105";
 
     document.getElementById('autoplay-container').className = tabName === 'flash' ? "flex items-center gap-2" : "hidden";
 
@@ -119,6 +130,7 @@ function switchTab(event, tabName) {
     }
 }
 
+// --- COMMUNICATEUR DE RÉSULTAT ---
 function processAnswerResult(isCorrect) {
     if (isCorrect) {
         currentStreak++;
@@ -127,6 +139,7 @@ function processAnswerResult(isCorrect) {
         totalPoints += 10;
         document.getElementById('total-points').innerText = totalPoints;
         updateLevelAndTitle();
+        
         if (currentStreak >= 15) checkAndUnlockBadge("streak_15");
     } else {
         currentStreak = 0;
@@ -137,10 +150,11 @@ function processAnswerResult(isCorrect) {
     saveStats();
 }
 
+// --- DICTIONNAIRE ---
 function toggleDirectionDico() {
     searchDirection = (searchDirection === 'EN_FR') ? 'FR_EN' : 'EN_FR';
     document.getElementById('direction-label').innerText = (searchDirection === 'EN_FR') ? 'FR ➔ EN' : 'EN ➔ FR';
-    document.getElementById('search-input').placeholder = (searchDirection === 'EN_FR') ? 'Rechercher un sentiment...' : 'Search for a feeling...';
+    document.getElementById('search-input').placeholder = (searchDirection === 'EN_FR') ? 'Rechercher un animal...' : 'Search for an animal...';
     filterWords();
 }
 
@@ -152,16 +166,15 @@ function renderDict(data = null) {
     if (data === null) {
         data = fruitsData.filter(f => f.level === selectedVocabularyLevel);
     }
-
     if(data.length === 0) {
-        container.innerHTML = `<p class="text-center text-sm py-8 text-slate-500 font-bold italic">Aucun sentiment trouvé avec ces filtres.</p>`;
+        container.innerHTML = `<p class="text-center text-sm py-6 text-slate-400 italic">Aucun animal trouvé dans cette zone.</p>`;
         return;
     }
 
     data.forEach(item => {
         const isFav = favoriteFruits.includes(item.en);
         const div = document.createElement('div');
-        div.className = "bg-slate-800 border border-slate-700/60 p-4 rounded-2xl shadow-md flex justify-between items-center cursor-pointer hover:border-brandPurple/60 hover:bg-slate-700/50 transition-all duration-200 group";
+        div.className = "bg-white dark:bg-darkCard p-3.5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex justify-between items-center cursor-pointer hover:border-brandPurple/40 active:bg-slate-100 dark:active:bg-slate-700 transition duration-150";
         div.onclick = () => playAudio(item.en);
         
         const primaryText = (searchDirection === 'EN_FR') ? item.en : item.fr;
@@ -169,17 +182,17 @@ function renderDict(data = null) {
 
         div.innerHTML = `
             <div class="flex items-center gap-4">
-                <span class="text-4xl group-hover:scale-110 transition-transform duration-200">${item.emoji}</span>
+                <span class="text-3xl">${item.emoji}</span>
                 <div>
-                    <p class="font-extrabold text-base text-slate-100">${primaryText}</p>
-                    <p class="text-xs text-slate-400 font-medium font-mono">${secondaryText}</p>
+                    <p class="font-extrabold text-base text-slate-800 dark:text-white">${primaryText}</p>
+                    <p class="text-xs font-bold text-slate-400 dark:text-slate-500">${secondaryText}</p>
                 </div>
             </div>
-            <div class="flex items-center gap-3">
-                <button onclick="toggleFavorite('${item.en}', event)" class="p-2 text-xl transition-all text-slate-600 hover:text-amber-400">
-                    <i class="${isFav ? 'fa-solid text-amber-400' : 'fa-regular'} fa-star"></i>
+            <div class="flex items-center gap-2">
+                <button onclick="toggleFavorite('${item.en}', event)" class="p-2 text-xl transition text-slate-300 dark:text-slate-600 hover:text-yellow-400 hover:scale-110">
+                    <i class="${isFav ? 'fa-solid text-yellow-400' : 'fa-regular'} fa-star"></i>
                 </button>
-                <span class="text-brandPurple bg-brandPurple/10 border border-brandPurple/20 rounded-xl p-2.5 text-base shadow-sm group-hover:bg-brandPurple group-hover:text-white transition-all"><i class="fa-solid fa-volume-high"></i></span>
+                <span class="text-brandPurple dark:text-brandPurple/80 p-2 text-lg"><i class="fa-solid fa-volume-high"></i></span>
             </div>
         `;
         container.appendChild(div);
@@ -201,18 +214,19 @@ function toggleFavorite(englishName, event) {
     const index = favoriteFruits.indexOf(englishName);
     if (index > -1) favoriteFruits.splice(index, 1);
     else favoriteFruits.push(englishName);
-    localStorage.setItem('oe_fav_feel', JSON.stringify(favoriteFruits)); 
+    localStorage.setItem('oe_fav_anim', JSON.stringify(favoriteFruits));
     filterWords();
 }
 
 function toggleFavFilter() {
     filterOnlyFavs = !filterOnlyFavs;
     document.getElementById('fav-filter-btn').className = filterOnlyFavs 
-        ? "px-4 bg-amber-400 border-2 border-amber-400 text-slate-950 rounded-2xl transition shadow-lg shadow-amber-400/20"
-        : "px-4 bg-slate-800 border-2 border-slate-700/80 rounded-2xl text-slate-500 hover:text-amber-400 hover:border-amber-400/50 transition-all shadow-sm";
+        ? "px-4 bg-yellow-400 text-slate-900 border-2 border-yellow-400 rounded-2xl shadow-md transition"
+        : "px-4 bg-white dark:bg-darkCard border-2 border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 hover:text-yellow-500 transition";
     filterWords();
 }
 
+// --- FLASHCARDS & DIAPORAMA ---
 function updateFlashcard() {
     const card = document.getElementById('main-flashcard');
     if (!card) return;
@@ -246,8 +260,8 @@ function prevFlashcard() {
 function toggleSlideshow() { if (isSlideshowActive) stopSlideshow(); else startSlideshow(); }
 function startSlideshow() {
     isSlideshowActive = true;
-    document.getElementById('slideshow-btn').className = "bg-brandPink text-white px-5 py-2.5 rounded-2xl text-sm font-extrabold shadow-lg shadow-brandPink/30 transition-all hover:scale-105 active:scale-95 border border-brandPink";
-    document.getElementById('slideshow-btn').innerHTML = `<i class="fa-solid fa-square mr-1.5"></i> Stop Diaporama`;
+    document.getElementById('slideshow-btn').className = "bg-brandCoral text-white px-5 py-2.5 rounded-xl text-xs font-black tracking-wider uppercase shadow-md hover:scale-105 transition-all";
+    document.getElementById('slideshow-btn').innerHTML = `<i class="fa-solid fa-square mr-1"></i> Arrêter le Mode`;
     document.getElementById('flash-prev-btn').disabled = true;
     document.getElementById('flash-next-btn').disabled = true;
     document.getElementById('flash-prev-btn').classList.add('opacity-30');
@@ -260,8 +274,8 @@ function stopSlideshow() {
     clearTimeout(slideshowTimeout);
     const btn = document.getElementById('slideshow-btn');
     if (btn) {
-        btn.className = "bg-brandGreen text-slate-950 px-5 py-2.5 rounded-2xl text-sm font-extrabold shadow-lg shadow-brandGreen/20 transition-all hover:scale-105 active:scale-95";
-        btn.innerHTML = `<i class="fa-solid fa-play mr-1.5"></i> Lancer le Mode Diaporama`;
+        btn.className = "bg-brandNeonGreen text-slate-950 px-5 py-2.5 rounded-xl text-xs font-black tracking-wider uppercase shadow-md hover:scale-105 transition-all";
+        btn.innerHTML = `<i class="fa-solid fa-play mr-1"></i> Lancer le Diaporama`;
     }
     const pB = document.getElementById('flash-prev-btn');
     if(pB) {
@@ -287,16 +301,18 @@ function runSlideshowLoop() {
             currentFlashIndex = (currentFlashIndex + 1) % activeLevelWords.length;
             updateFlashcard();
             runSlideshowLoop();
-        }, 3200);
+        }, 3000);
     }, 2500);
 }
 
+// --- GESTIONNAIRE D'ÉCRANS DU QUIZ ---
 function resetQuizToMenu() {
     document.getElementById('quiz-mode-menu').classList.remove('hidden');
     document.getElementById('quiz-classic-zone').classList.add('hidden');
     document.getElementById('quiz-timeattack-zone').classList.add('hidden');
 }
 
+// --- QUIZ CLASSIQUE ---
 function launchStandardQuiz() {
     document.getElementById('quiz-mode-menu').classList.add('hidden');
     document.getElementById('quiz-classic-zone').classList.remove('hidden');
@@ -310,9 +326,9 @@ function generateQuizQuestion() {
         if (quizScore > highScores.quiz) { highScores.quiz = quizScore; saveStats(); }
         if (quizScore === 10) {
             triggerConfetti();
-            checkAndUnlockBadge("first_perfect"); 
+            checkAndUnlockBadge("first_perfect");
         }
-        alert(`🏆 Quiz terminé ! Score final : ${quizScore}/10.`);
+        alert(`🔥 Session Terminée ! Score final : ${quizScore}/10.`);
         document.getElementById('stat-high-quiz').innerText = highScores.quiz;
         resetQuizToMenu();
         return;
@@ -334,7 +350,7 @@ function generateQuizQuestion() {
     container.innerHTML = '';
     choices.forEach(choice => {
         const btn = document.createElement('button');
-        btn.className = "w-full bg-slate-800 border-2 border-slate-700/80 text-slate-100 p-4 rounded-2xl font-bold text-left transition-all hover:border-brandPurple hover:bg-slate-700/40";
+        btn.className = "w-full bg-white dark:bg-darkCard border-2 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white p-4 rounded-2xl font-bold text-left transition-all hover:border-brandPurple hover:scale-[1.01] shadow-sm";
         btn.innerText = choice;
         btn.onclick = () => checkQuizAnswer(btn, choice);
         container.appendChild(btn);
@@ -344,22 +360,23 @@ function generateQuizQuestion() {
 function checkQuizAnswer(button, selected) {
     document.querySelectorAll('#quiz-options button').forEach(b => b.disabled = true);
     if (selected === currentQuizItem.fr) {
-        button.className = "w-full bg-brandGreen text-slate-950 border border-brandGreen p-4 rounded-2xl font-extrabold text-left transition-all shadow-lg shadow-brandGreen/20";
+        button.className = "w-full bg-brandNeonGreen text-slate-950 p-4 rounded-2xl font-black text-left shadow-md transition-all animate-bounce";
         quizScore++;
         document.getElementById('quiz-score').innerText = quizScore;
-        removeError(currentQuizItem.en); 
+        removeError(currentQuizItem.en);
         processAnswerResult(true);
     } else {
-        button.className = "w-full bg-brandPink text-white border border-brandPink p-4 rounded-2xl font-extrabold text-left transition-all shadow-lg shadow-brandPink/20";
-        registerError(currentQuizItem); 
+        button.className = "w-full bg-brandCoral text-white p-4 rounded-2xl font-black text-left shadow-md transition-all";
+        registerError(currentQuizItem);
         processAnswerResult(false);
         document.querySelectorAll('#quiz-options button').forEach(b => {
-            if(b.innerText === currentQuizItem.fr) b.className = "w-full bg-brandGreen text-slate-950 border border-brandGreen p-4 rounded-2xl font-extrabold text-left transition-all";
+            if(b.innerText === currentQuizItem.fr) b.className = "w-full bg-brandNeonGreen text-slate-950 p-4 rounded-2xl font-black text-left transition-all";
         });
     }
-    quizTimeout = setTimeout(() => { quizStep++; generateQuizQuestion(); }, 1400);
+    quizTimeout = setTimeout(() => { quizStep++; generateQuizQuestion(); }, 1200);
 }
 
+// --- MODE SPEED RUN (TIME ATTACK) ---
 function launchTimeAttack() {
     document.getElementById('quiz-mode-menu').classList.add('hidden');
     document.getElementById('quiz-timeattack-zone').classList.remove('hidden');
@@ -376,13 +393,13 @@ function launchTimeAttack() {
         taTimeLeft--;
         document.getElementById('ta-timer').innerText = taTimeLeft;
         if (taTimeLeft <= 0) {
-            stopTimeAttack(true); 
+            stopTimeAttack(true);
         }
     }, 1000);
 }
 
 function generateTAQuestion() {
-    currentTAItem = getNextExerciseWord(); 
+    currentTAItem = getNextExerciseWord();
     document.getElementById('ta-question').innerText = currentTAItem.en;
 
     const activePack = fruitsData.filter(f => f.level === selectedVocabularyLevel);
@@ -397,7 +414,7 @@ function generateTAQuestion() {
     container.innerHTML = '';
     choices.forEach(choice => {
         const btn = document.createElement('button');
-        btn.className = "w-full bg-slate-800 border-2 border-slate-700/80 text-slate-100 p-4 rounded-2xl font-bold text-left transition-all hover:border-brandPink hover:bg-slate-700/40";
+        btn.className = "w-full bg-white dark:bg-darkCard border-2 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white p-4 rounded-2xl font-bold text-left transition-all hover:border-brandCoral hover:scale-[1.01] shadow-sm";
         btn.innerText = choice;
         btn.onclick = () => checkTAAnswer(btn, choice);
         container.appendChild(btn);
@@ -414,19 +431,19 @@ function checkTAAnswer(button, selected) {
         processAnswerResult(true);
         generateTAQuestion(); 
     } else {
-        button.className = "w-full bg-brandPink text-white border border-brandPink p-4 rounded-2xl font-extrabold text-left transition-all";
+        button.className = "w-full bg-brandCoral text-white p-4 rounded-2xl font-black text-left shadow-md transition-all";
         registerError(currentTAItem);
         processAnswerResult(false);
-        taTimeout = setTimeout(() => { generateTAQuestion(); }, 500);
+        taTimeout = setTimeout(() => { generateTAQuestion(); }, 400);
     }
 }
 
 function stopTimeAttack(isFinishedFinished = false) {
     clearInterval(taTimerInterval);
-    if (taTimeout) clearTimeout(taTimeout); 
+    if (taTimeout) clearTimeout(taTimeout);
     
     if (isFinishedFinished) {
-        alert(`⏱️ Fin du Chrono ! Score : ${taScore} bonnes réponses !`);
+        alert(`⏱️ Fin du chrono ! Tu as validé ${taScore} mots !`);
         
         if (taScore >= 20) {
             checkAndUnlockBadge("time_20");
@@ -441,6 +458,7 @@ function stopTimeAttack(isFinishedFinished = false) {
     }
 }
 
+// --- MICRO / SPEAK MODE ---
 function initSpeak() {
     speakScore = 0;
     document.getElementById('speak-score').innerText = speakScore;
@@ -448,26 +466,26 @@ function initSpeak() {
 }
 
 function generateSpeakQuestion() {
-    currentSpeakItem = getNextExerciseWord(); 
+    currentSpeakItem = getNextExerciseWord();
     
     document.getElementById('speak-emoji').innerText = currentSpeakItem.emoji;
     document.getElementById('speak-prompt-fr').innerText = currentSpeakItem.fr;
     
     const resultBox = document.getElementById('speech-result');
-    resultBox.className = "hidden text-base font-bold p-4 rounded-2xl border transition-all duration-300";
-    document.getElementById('speech-status').innerText = "Clique sur le micro rouge pour parler";
+    resultBox.className = "hidden text-sm font-bold p-4 rounded-2xl";
+    document.getElementById('speech-status').innerText = "CLIQUE SUR LE MICRO POUR PARLER";
     document.getElementById('mic-pulse').classList.add('hidden');
 }
 
 function startSpeechRecognition() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-        alert("Microphone non disponible sur ce navigateur. Utilise Chrome ou Safari.");
+        alert("La reconnaissance vocale n'est pas supportée par ton navigateur. Utilise Google Chrome ou Safari.");
         return;
     }
 
     const recognition = new SpeechRecognition();
-    recognition.lang = 'en-US'; 
+    recognition.lang = 'en-US';
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 
@@ -476,8 +494,8 @@ function startSpeechRecognition() {
     const resultBox = document.getElementById('speech-result');
 
     pulse.classList.remove('hidden');
-    statusText.innerText = "🎙️ Écoute active... Parle maintenant !";
-    resultBox.className = "hidden text-base font-bold p-4 rounded-2xl border transition-all duration-300";
+    statusText.innerText = "ÉCOUTE EN COURS... PARLE MAINTENANT !";
+    resultBox.className = "hidden text-sm font-bold p-4 rounded-2xl";
 
     recognition.start();
 
@@ -486,11 +504,11 @@ function startSpeechRecognition() {
         const targetWord = currentSpeakItem.en.toLowerCase();
         
         resultBox.classList.remove('hidden');
-        resultBox.innerHTML = `Reconnu : <span class="text-white font-mono bg-black/30 px-2 py-1 rounded border border-slate-700">"${speechResult}"</span>`;
+        resultBox.innerHTML = `Tu as dit : <span class="italic text-base">"${speechResult}"</span>`;
 
         if (speechResult === targetWord) {
-            resultBox.classList.add('bg-brandGreen/20', 'text-brandGreen', 'border-brandGreen/30');
-            statusText.innerHTML = "🎯 <span class='text-brandGreen font-bold'>Parfait ! +10 XP</span>";
+            resultBox.classList.add('bg-green-100', 'text-green-800', 'dark:bg-green-950/40', 'dark:text-green-400');
+            statusText.innerText = "GG ! EXCELLENTE PRONONCIATION ! +10 XP";
             
             speakScore++;
             document.getElementById('speak-score').innerText = speakScore;
@@ -503,13 +521,14 @@ function startSpeechRecognition() {
 
             removeError(currentSpeakItem.en); 
             processAnswerResult(true);
+            
             speakTimeout = setTimeout(() => generateSpeakQuestion(), 2000);
 
         } else {
-            resultBox.classList.add('bg-brandPink/20', 'text-brandPink', 'border-brandPink/30');
-            statusText.innerText = "Essaye encore ! Focalise sur la bonne prononciation.";
+            resultBox.classList.add('bg-red-100', 'text-red-800', 'dark:bg-red-950/40', 'dark:text-brandCoral');
+            statusText.innerText = "ESSAIE ENCORE, TU Y ES PRESQUE !";
             
-            registerError(currentSpeakItem); 
+            registerError(currentSpeakItem);
             processAnswerResult(false);
         }
     };
@@ -521,12 +540,13 @@ function startSpeechRecognition() {
 
     recognition.onerror = () => {
         pulse.classList.add('hidden');
-        statusText.innerText = "Zut ! Aucun son détecté. Recommence.";
+        statusText.innerText = "AUCUN SON DÉTECTÉ. RÉESSAIE !";
     };
 }
 
+// --- MATCHING GAME ---
 function initMatching() {
-    isProcessingMatch = false; 
+    isProcessingMatch = false;
     const grid = document.getElementById('matching-grid'); 
     if(!grid) return;
     grid.innerHTML = '';
@@ -539,48 +559,34 @@ function initMatching() {
     englishCards.sort(() => Math.random() - 0.5); 
     frenchCards.sort(() => Math.random() - 0.5);
 
-    const mergedCards = [];
-    for(let i=0; i < 4; i++) {
-        mergedCards.push(englishCards[i]);
-        mergedCards.push(frenchCards[i]);
-    }
-    // Mélange total de la grille pour le côté puzzle addictif
-    mergedCards.sort(() => Math.random() - 0.5);
+    for(let i=0; i < englishCards.length; i++) {
+        const btnEn = document.createElement('button');
+        btnEn.className = "bg-white dark:bg-darkCard border-2 border-brandPurple text-brandPurple p-4 rounded-2xl font-black transition-all text-center text-xs sm:text-sm hover:scale-[1.02] shadow-sm";
+        btnEn.innerText = englishCards[i].text; btnEn.onclick = () => { btnEn.dataset.id = englishCards[i].id; btnEn.dataset.type = 'en'; handleMatchSelect(btnEn); };
 
-    mergedCards.forEach(card => {
-        const btn = document.createElement('button');
-        if (card.type === 'en') {
-            btn.className = "bg-slate-800 border-2 border-brandPurple text-brandPurple p-4 rounded-2xl font-black transition-all text-center text-xs sm:text-sm hover:bg-brandPurple/10 shadow-md";
-        } else {
-            btn.className = "bg-slate-800 border-2 border-brandPink text-brandPink p-4 rounded-2xl font-black transition-all text-center text-xs sm:text-sm hover:bg-brandPink/10 shadow-md";
-        }
-        btn.innerText = card.text;
-        btn.onclick = () => { 
-            btn.dataset.id = card.id; 
-            btn.dataset.type = card.type; 
-            handleMatchSelect(btn); 
-        };
-        grid.appendChild(btn);
-    });
+        const btnFr = document.createElement('button');
+        btnFr.className = "bg-white dark:bg-darkCard border-2 border-brandCoral text-brandCoral p-4 rounded-2xl font-black transition-all text-center text-xs sm:text-sm hover:scale-[1.02] shadow-sm";
+        btnFr.innerText = frenchCards[i].text; btnFr.onclick = () => { btnFr.dataset.id = frenchCards[i].id; btnFr.dataset.type = 'fr'; handleMatchSelect(btnFr); };
+
+        grid.appendChild(btnEn); grid.appendChild(btnFr);
+    }
 }
 
 function handleMatchSelect(node) {
     if (isProcessingMatch) return;
 
     if (node.dataset.type === 'en') {
-        if (selectedEnglishNode) selectedEnglishNode.classList.remove('bg-brandPurple/30', 'scale-105');
-        selectedEnglishNode = node; 
-        selectedEnglishNode.classList.add('bg-brandPurple/30', 'scale-105');
+        if (selectedEnglishNode) selectedEnglishNode.classList.remove('bg-brandPurple/20', 'dark:bg-brandPurple/40');
+        selectedEnglishNode = node; selectedEnglishNode.classList.add('bg-brandPurple/20', 'dark:bg-brandPurple/40');
     } else {
-        if (selectedFrenchNode) selectedFrenchNode.classList.remove('bg-brandPink/30', 'scale-105');
-        selectedFrenchNode = node; 
-        selectedFrenchNode.classList.add('bg-brandPink/30', 'scale-105');
+        if (selectedFrenchNode) selectedFrenchNode.classList.remove('bg-brandCoral/20', 'dark:bg-brandCoral/40');
+        selectedFrenchNode = node; selectedFrenchNode.classList.add('bg-brandCoral/20', 'dark:bg-brandCoral/40');
     }
 
     if (selectedEnglishNode && selectedFrenchNode) {
         if (selectedEnglishNode.dataset.id === selectedFrenchNode.dataset.id) {
-            selectedEnglishNode.className = "bg-brandGreen text-slate-950 border border-brandGreen p-4 rounded-2xl font-black text-center pointer-events-none transition-all text-xs sm:text-sm matched-card shadow-lg shadow-brandGreen/20";
-            selectedFrenchNode.className = "bg-brandGreen text-slate-950 border border-brandGreen p-4 rounded-2xl font-black text-center pointer-events-none transition-all text-xs sm:text-sm matched-card shadow-lg shadow-brandGreen/20";
+            selectedEnglishNode.className = "bg-brandNeonGreen text-slate-950 p-4 rounded-2xl font-black text-center pointer-events-none transition-all text-xs sm:text-sm matched-card shadow-md animate-pulse";
+            selectedFrenchNode.className = "bg-brandNeonGreen text-slate-950 p-4 rounded-2xl font-black text-center pointer-events-none transition-all text-xs sm:text-sm matched-card shadow-md animate-pulse";
             removeError(selectedEnglishNode.dataset.id);
             processAnswerResult(true);
             selectedEnglishNode = null; selectedFrenchNode = null;
@@ -589,30 +595,31 @@ function handleMatchSelect(node) {
             if (totalMatched === 8) {
                 setTimeout(() => {
                     triggerConfetti();
-                    alert("🎉 Incroyable ! Grille complétée avec succès !");
-                    initMatching(); 
+                    alert("⚡ Épique ! Toutes les paires sont connectées !");
+                    initMatching();
                 }, 500);
             }
         } else {
             isProcessingMatch = true; 
             const eNode = selectedEnglishNode, fNode = selectedFrenchNode;
-            eNode.className = "bg-brandPink text-white border border-brandPink p-4 rounded-2xl font-black text-center transition-all text-xs sm:text-sm shadow-lg shadow-brandPink/20 animate-shake";
-            fNode.className = "bg-brandPink text-white border border-brandPink p-4 rounded-2xl font-black text-center transition-all text-xs sm:text-sm shadow-lg shadow-brandPink/20 animate-shake";
+            eNode.className = "bg-brandCoral text-white p-4 rounded-2xl font-black text-center shadow-md transition-all";
+            fNode.className = "bg-brandCoral text-white p-4 rounded-2xl font-black text-center shadow-md transition-all";
             
             const failFruit = fruitsData.find(f => f.en === eNode.dataset.id);
             if(failFruit) registerError(failFruit);
             
             processAnswerResult(false);
             setTimeout(() => {
-                eNode.className = "bg-slate-800 border-2 border-brandPurple text-brandPurple p-4 rounded-2xl font-black transition-all text-center text-xs sm:text-sm hover:bg-brandPurple/10";
-                fNode.className = "bg-slate-800 border-2 border-brandPink text-brandPink p-4 rounded-2xl font-black transition-all text-center text-xs sm:text-sm hover:bg-brandPink/10";
+                eNode.className = "bg-white dark:bg-darkCard border-2 border-brandPurple text-brandPurple p-4 rounded-2xl font-black transition-all text-center text-xs sm:text-sm shadow-sm";
+                fNode.className = "bg-white dark:bg-darkCard border-2 border-brandCoral text-brandCoral p-4 rounded-2xl font-black transition-all text-center text-xs sm:text-sm shadow-sm";
                 isProcessingMatch = false; 
-            }, 900);
+            }, 800);
             selectedEnglishNode = null; selectedFrenchNode = null;
         }
     }
 }
 
+// --- TROPHÉES ---
 function renderBadgesUI() {
     const container = document.getElementById('badges-list');
     if(!container) return;
@@ -621,46 +628,45 @@ function renderBadgesUI() {
     badgesDatabase.forEach(badge => {
         const isUnlocked = unlockedBadges.includes(badge.id);
         const div = document.createElement('div');
-        div.className = `p-4 rounded-2xl border transition-all ${isUnlocked ? 'bg-slate-900 border-slate-700/80 opacity-100 shadow-xl' : 'bg-slate-950/40 border-slate-800/80 opacity-40 select-none'}`;
+        div.className = `p-3.5 rounded-2xl border flex items-center gap-4 transition-all ${isUnlocked ? 'bg-white dark:bg-slate-800 border-brandNeonGreen/30 opacity-100 shadow-md' : 'bg-slate-100 dark:bg-slate-900/40 border-transparent opacity-30 select-none'}`;
         
         div.innerHTML = `
-            <div class="flex items-center gap-3.5">
-                <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-inner ${isUnlocked ? badge.color + ' text-white shadow-lg' : 'bg-slate-800 text-slate-600'}">
-                    ${badge.icon}
-                </div>
-                <div class="text-left flex-grow">
-                    <h4 class="font-extrabold text-sm text-slate-100 flex items-center gap-1.5">
-                        ${badge.title} 
-                        ${isUnlocked ? '<i class="fa-solid fa-circle-check text-brandGreen text-xs"></i>' : ''}
-                    </h4>
-                    <p class="text-[11px] text-slate-400 font-medium leading-normal mt-0.5">${badge.desc}</p>
-                </div>
+            <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-inner ${isUnlocked ? badge.color + ' text-white' : 'bg-slate-300 text-slate-500 dark:bg-slate-700'}">
+                ${badge.icon}
+            </div>
+            <div class="text-left">
+                <h4 class="font-extrabold text-xs text-slate-800 dark:text-white flex items-center gap-1 uppercase tracking-wide">
+                    ${badge.title} 
+                    ${isUnlocked ? '<i class="fa-solid fa-circle-check text-brandNeonGreen text-[11px]"></i>' : ''}
+                </h4>
+                <p class="text-[10px] text-slate-400 dark:text-slate-400 font-bold mt-0.5 leading-tight">${badge.desc}</p>
             </div>
         `;
         container.appendChild(div);
     });
 }
 
+// --- CARNET DE RÉVISIONS ---
 function renderErrorHistory() {
     const container = document.getElementById('error-history-list');
     if (!container) return;
     container.innerHTML = '';
 
     if (errorHistory.length === 0) {
-        container.innerHTML = `<p class="text-slate-500 italic text-center text-xs py-6 font-bold">✨ Aucune erreur en cours, tu gères grave !</p>`;
+        container.innerHTML = `<p class="text-slate-400 dark:text-slate-500 italic text-center text-xs py-5 font-bold">🎯 Aucune erreur ! Tu gères la faune à la perfection.</p>`;
         return;
     }
 
     errorHistory.forEach(item => {
         const div = document.createElement('div');
-        div.className = "flex items-center justify-between p-3 bg-slate-900 border border-slate-800 rounded-xl text-xs font-semibold shadow-inner";
+        div.className = "flex items-center justify-between p-3 bg-brandCoral/5 dark:bg-brandCoral/10 border border-brandCoral/20 rounded-xl text-xs";
         div.innerHTML = `
-            <div class="flex items-center gap-2.5">
+            <div class="flex items-center gap-3">
                 <span class="text-lg">${item.emoji}</span>
-                <span class="font-black text-brandPink">${item.en}</span>
-                <span class="text-slate-400 font-normal">(${item.fr})</span>
+                <span class="font-black text-brandPurple dark:text-brandCoral">${item.en}</span>
+                <span class="text-slate-400 font-bold">(${item.fr})</span>
             </div>
-            <button onclick="clearWordFromRevision('${item.en}')" class="text-brandGreen bg-brandGreen/10 border border-brandGreen/20 px-2 py-1 rounded-lg font-bold hover:bg-brandGreen hover:text-slate-950 transition-all text-[11px]">
+            <button onclick="clearWordFromRevision('${item.en}')" class="bg-brandNeonGreen/20 text-brandNeonGreen border border-brandNeonGreen/20 hover:bg-brandNeonGreen hover:text-slate-900 font-black tracking-wider uppercase transition px-2.5 py-1 rounded-lg text-[10px]">
                 <i class="fa-solid fa-check"></i> Acquis
             </button>
         `;
