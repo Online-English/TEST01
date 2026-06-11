@@ -2,8 +2,8 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Present Simple Mastery 5.0 | online-english.be</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=no">
+    <title>Present Simple Mastery 5.1 | online-english.be</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#030305">
@@ -23,10 +23,10 @@
             --bg: #030305;
             --surface: #0c0c10;
             --surface-input: #121218;
-            --primary: #00FF85; 
-            --secondary: #1E90FF; 
-            --accent: #FF007F; 
-            --error: #FF3B30; 
+            --primary: #00FF85; /* Vert Néon par défaut */
+            --secondary: #1E90FF; /* Bleu Électrique par défaut */
+            --accent: #FF007F; /* Rose Cyber par défaut */
+            --error: #FF3B30; /* Rouge Éclair */
             --text: #F4F4F6;
         }
         
@@ -35,7 +35,7 @@
         header a { color: var(--primary); text-decoration: none; font-weight: bold; font-family: 'Orbitron'; font-size: 0.85rem; letter-spacing: 1px; text-shadow: 0 0 8px rgba(0,255,133,0.3); }
         .theme-tag { color: var(--secondary); font-family: 'Orbitron'; font-weight: 700; font-size: 0.8rem; margin-left: 3px; letter-spacing: 0.5px; }
         
-        .nav-btn { background: none; border: 2px solid #2a2a38; color: var(--text); padding: 8px 14px; border-radius: 10px; cursor: pointer; font-family: 'Orbitron'; font-size: 0.7rem; font-weight: 700; transition: 0.2s ease; }
+        .nav-btn { background: none; border: 2px solid #2a2a38; color: var(--text); padding: 8px 14px; border-radius: 10px; cursor: pointer; font-family: 'Orbitron'; font-size: 0.7rem; font-weight: 700; transition: 0.2s ease; display: inline-flex; align-items: center; justify-content: center; }
         .nav-btn:hover { border-color: var(--primary); color: var(--primary); box-shadow: 0 0 10px rgba(0,255,133,0.2); }
         
         .progress-container { width: 100%; height: 6px; background: #121218; position: relative; }
@@ -99,7 +99,10 @@
             <a href="https://online-english.be" target="_blank">ONLINE-ENGLISH.BE</a>
             <span class="theme-tag">(PRESENT SIMPLE)</span>
         </div>
-        <button class="nav-btn" onclick="openModal('stat-modal')"><i class="fas fa-chart-pie"></i> STATS</button>
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <button class="nav-btn" id="audio-toggle-btn" onclick="toggleMute()" title="Couper/Activer le son"><i class="fas fa-volume-up"></i></button>
+            <button class="nav-btn" onclick="openModal('stat-modal')"><i class="fas fa-chart-pie"></i> STATS</button>
+        </div>
     </header>
     <div class="progress-container"><div id="progress" class="progress-bar"></div></div>
 
@@ -142,7 +145,7 @@
 
         <div id="game-zone">
             <div id="timer" class="timer">00:00</div>
-            <div style="margin: 5px 0;">
+            <div style="margin: 15px 0;">
                 <span id="sentence" style="font-size: 1.4rem; font-weight: bold; line-height: 1.4; display: inline-block;"></span>
                 <button onclick="listenSentence()" style="background:none; border:none; color:var(--secondary); font-size:1.5rem; cursor:pointer; vertical-align:middle; margin-left:6px;"><i class="fas fa-volume-up"></i></button>
                 

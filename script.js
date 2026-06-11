@@ -1,9 +1,12 @@
 // script.js
-let currentScore = 0, qIndex = 0, currentQuestions = [], isExamMode = false, isQcmMode = false;
+let currentScore = 0, qIndex = 0, currentQuestions = [], isExamMode = false;
 let timerInterval, startTime, panicTimer, panicTimeLeft, combo = 0;
 let duelChallengerInfo = null; 
 let roundPool = []; // Pool de secours global pour le suivi adaptatif phrase par phrase
 let nextQuestionTimeout = null; // Protège contre les collisions de menus déroulants
+
+let isMuted = localStorage.getItem('ems_muted') === 'true'; // Variable globale de sourdine
+let sessionXpEarned = 0; // Calcul de l'XP de la partie courante
 
 const initialGameZoneHtml = document.getElementById('game-zone').innerHTML;
 
@@ -41,7 +44,7 @@ const themes = {
     "violet": { primary: "#A020F0", secondary: "#00FF85", accent: "#FF007F" }
 };
 
-const avatarList = ["👤", "Sneakers", "Bag", "Cookie", "Headphones", "Ninja", "Target", "Wizard", "Rocket", "Robot", "Dragon", "Crown"];
+const avatarList = ["👤", "👟", "🎒", "🍪", "🎧", "🥷", "🎯", "🧙", "🚀", "🤖", "🐲", "👑"];
 
 const menuBaseTexts = {
     "affirmative": "Formes Affirmatives", "negative": "Formes Négatives", "interrogative": "Formes Interrogatives",
@@ -50,7 +53,7 @@ const menuBaseTexts = {
 };
 
 const vocabTranslations = {
-    "football": "ballon de football ⚽", "video": "jeux vidéo 🎮", "games": "jeux vidéo 🎮", "movies": "films 🎬",
+    "football": "ballon de football ⚽", "video games": "jeux vidéo 🎮", "movies": "films 🎬",
     "gym": "salle de sport 🏋️", "history": "histoire 📚", "pizza": "pizza 🍕", "burgers": "hamburgers 🍔",
     "french": "français 🇫🇷", "spanish": "espagnol 🇪🇸", "books": "livres 📚", "magazines": "magazines 📰",
     "music": "musique 🎵", "podcasts": "podcasts 🎙️", "car": "voiture 🚗", "dishes": "vaisselle 🍽️",
@@ -59,7 +62,7 @@ const vocabTranslations = {
     "milk": "lait 🥛", "soda": "soda 🥤", "dinner": "dîner 🍽️", "meals": "repas 🍲", "room": "chambre 🛏️",
     "house": "maison 🏠", "emails": "e-mails 📧", "stories": "histoires 📖", "songs": "chansons 🎤",
     "math": "mathématiques 📐", "languages": "langues 🌐", "drone": "drone 🛸", "kites": "cerfs-volants 🪁",
-    "europe": "Europe 🇪🇺", "world": "monde 🌍", "new": "nouveaux vêtements 👕", "clothes": "vêtements 👕", "shoes": "chaussures 👟",
+    "europe": "Europe 🇪🇺", "world": "monde 🌍", "clothes": "vêtements 👕", "shoes": "chaussures 👟",
     "pictures": "images 🖼️", "walls": "murs 🧱", "spinach": "épinards 🥬", "answer": "réponse 📝"
 };
 
@@ -91,8 +94,6 @@ function toggleExamMode() {
 
 function applyTheme(themeName) {
     let t = themes[themeName] || themes["vert"];
-    document.documentElement.style.setProperty('--bg', '#030305');
-    document.documentElement.style.setProperty('--surface', '#0c0c10');
     document.documentElement.style.setProperty('--primary', t.primary);
     document.documentElement.style.setProperty('--secondary', t.secondary);
     document.documentElement.style.setProperty('--accent', t.accent);
@@ -116,7 +117,7 @@ function syncThemeDropdown() {
 function saveTheme() { const select = document.getElementById('theme-select'); if(select) { localStorage.setItem('ems_theme', select.value); applyTheme(select.value); } }
 
 function playSound(type) {
-    if (isExamMode) return; 
+    if (isMuted || isExamMode) return; // Prise en compte de la condition de sourdine (Mute Toggle)
     try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
         const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.connect(gain); gain.connect(ctx.destination);
@@ -137,23 +138,17 @@ function playSound(type) {
 }
 
 function triggerConfetti() {
-    if (typeof confetti === 'function') {
+    if (typeof confetti === 'function' && !isExamMode) {
         confetti({ particleCount: 25, spread: 35, origin: { y: 0.85 } });
     }
 }
 function triggerEndConfetti() {
-    if (typeof confetti === 'function') {
+    if (typeof confetti === 'function' && !isExamMode) {
         confetti({ particleCount: 100, spread: 60, origin: { y: 0.6 } });
     }
 }
 
-// CORRECTION RECONSTRUCTION PHRASE POUR RELEVER LE DEFI DU MODE DICTEE/INTERROGATIF
-function getReconstructedSentence(q) { 
-    if (/\.\.\..*?\(.*?\)/.test(q.text)) {
-        return q.text.replace(/\.\.\..*?\(.*?\)/, q.answer);
-    }
-    return q.text.replace(/\.\.\./, q.answer);
-}
+function getReconstructedSentence(q) { return q.text.replace(/\.\.\.\s*(?:\([^)]*\))?/, q.answer); }
 
 function listenSentence() {
     if (!currentQuestions[qIndex]) return;
@@ -266,10 +261,11 @@ function resetGame() {
     
     let gz = document.getElementById('game-zone'); if(gz) gz.innerHTML = initialGameZoneHtml;
     qIndex = 0; currentScore = 0; combo = 0; duelChallengerInfo = null;
+    sessionXpEarned = 0; // Remise à zéro du score d'XP de la session
     
     const modeSelect = document.getElementById('mode-select'); const mode = modeSelect ? modeSelect.value : 'affirmative';
     const isPanicActive = document.getElementById('panic-toggle') ? document.getElementById('panic-toggle').checked : false;
-    isQcmMode = (mode === 'qcm'); // DECLARATION EXPLICITE APPLIQUEE GLOBALEMENT
+    isQcmMode = (mode === 'qcm');
 
     let pool = [];
     if (mode === 'duel') {
@@ -309,9 +305,7 @@ function startPanicCountdown() {
     if(timerDisplay) { timerDisplay.innerText = "00:08"; timerDisplay.classList.add('panic-text'); }
     if(pBar) pBar.classList.add('panic');
     panicTimer = setInterval(() => {
-        panicTimeLeft--; 
-        if(timerDisplay) timerDisplay.innerText = `00:${panicTimeLeft.toString().padStart(2, '0')}`; 
-        if(pBar) pBar.style.width = `${(panicTimeLeft / 8) * 100}%`;
+        panicTimeLeft--; if(timerDisplay) timerDisplay.innerText = `00:0${panicTimeLeft}`; if(pBar) pBar.style.width = `${(panicTimeLeft / 8) * 100}%`;
         if (panicTimeLeft <= 0) { clearInterval(panicTimer); handleCheck(""); }
     }, 1000);
 }
@@ -387,7 +381,10 @@ function handleCheck(qcmValue = null) {
     const oldLvl = calculateCurrentLevel();
 
     if (cleanInput === cleanAnswer) {
-        combo++; currentScore++; let mult = (combo >= 5) ? 3 : (combo >= 3) ? 2 : 1; if (isExamMode) mult = 1; totalXp += (10 * mult);
+        combo++; currentScore++; let mult = (combo >= 5) ? 3 : (combo >= 3) ? 2 : 1; if (isExamMode) mult = 1; 
+        totalXp += (10 * mult);
+        sessionXpEarned += (10 * mult); // Accumulation de l'XP de session
+        
         if(!isExamMode && fb) { 
             fb.innerHTML = `<span style="color:var(--primary); font-weight:bold;">🔥 CORRECT ! ${mult > 1 ? '(COMBO x'+mult+')' : '(+10 XP)'}</span>`; 
             playSound('correct'); 
@@ -439,6 +436,29 @@ function renderStats() {
     const container = document.getElementById('stats-container'); if (!container) return;
     let diag = (mistakesByCat.s_errors > 5) ? "⚠️ Règle des 3e personnes (-s / -es) non assimilée. Rappelle-toi : He/She/It prennent un -s !" : (mistakesByCat.negative > 5) ? "⚠️ Difficultés sur les négations. Révise l'utilisation de 'don't' et 'doesn't'." : (gamesPlayed === 0) ? "Aucun historique disponible. Termine d'abord un exercice !" : "✅ Excellent profil d'apprentissage. Compétences homogènes.";
     
+    // HISTORIQUE GRAPHIQUE : Préparation et calcul des barres d'XP
+    let xpHistory = getSafeLocalStorage('ems_xp_history', []);
+    let displayHistory = [...xpHistory];
+    while(displayHistory.length < 7) { displayHistory.unshift(0); } // Padder à 7 valeurs par défaut
+    let maxXp = Math.max(...displayHistory, 100); // Échelle minimale fixe à 100 XP
+
+    let chartHtml = `
+        <h3 style="color:white; font-family:'Orbitron'; margin-top:25px; font-size:1rem; border-bottom:1px solid #222230; padding-bottom:6px; letter-spacing:0.5px;">📈 Historique d'XP (7 dernières sessions)</h3>
+        <div style="display:flex; align-items:flex-end; justify-content:space-between; height:100px; background:var(--surface-input); padding:20px 10px 5px 10px; border-radius:14px; border:1px solid #222230; margin-top:12px; gap:6px;">
+    `;
+
+    displayHistory.forEach((xp, idx) => {
+        let heightPercent = (xp / maxXp) * 100;
+        chartHtml += `
+        <div style="display:flex; flex-direction:column; align-items:center; height:100%; justify-content:flex-end; flex:1;">
+            <span style="font-size:10px; font-family:'Orbitron'; color:var(--primary); margin-bottom:2px; font-weight:700;">${xp}</span>
+            <div style="width:100%; height:${heightPercent}%; background:linear-gradient(to top, var(--secondary), var(--primary)); border-radius:4px 4px 0 0; box-shadow: 0 0 8px rgba(0,255,133,0.15); min-height:2px;"></div>
+            <span style="font-size:9px; color:#555566; margin-top:3px; font-weight:700;">S${idx+1}</span>
+        </div>
+        `;
+    });
+    chartHtml += `</div>`;
+
     container.innerHTML = `
         <div class="rule-card" style="border-color:var(--accent); margin-top:10px;"><h3>🩺 Diagnostic Pédagogique (Prof)</h3><p>${diag}</p></div>
         <div class="stat-line"><span>Erreurs - Formes Affirmatives</span><span style="color:var(--error)">${mistakesByCat.affirmative}</span></div>
@@ -446,12 +466,19 @@ function renderStats() {
         <div class="stat-line"><span>Erreurs - Formes Interrogatives</span><span style="color:var(--error)">${mistakesByCat.interrogative}</span></div>
         <div class="stat-line"><span>Oublis du '-s' à la 3e personne</span><span style="color:var(--accent)">${mistakesByCat.s_errors}</span></div>
         <div class="stat-line"><span>Total de séries terminées</span><span style="color:var(--secondary)">${gamesPlayed}</span></div>
+        ${chartHtml}
     `;
 }
 
 function copyScoreToClipboard(textToCopy) { navigator.clipboard.writeText(textToCopy).then(() => { alert("Code copié !"); }); }
 function checkDailyStreak() { let today = new Date().toDateString(); let lastPlayed = localStorage.getItem('ems_last_played'); let streak = parseInt(localStorage.getItem('ems_streak')) || 0; if (lastPlayed) { if (lastPlayed === today) return; let yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1); if (lastPlayed === yesterday.toDateString()) streak++; else streak = 1; } else { streak = 1; } localStorage.setItem('ems_streak', streak); localStorage.setItem('ems_last_played', today); }
-function exportSave() { let keys = ['ems_xp', 'ems_errors', 'ems_games', 'ems_perfect', 'ems_mistakes_cat', 'ems_completed_modes', 'ems_streak', 'ems_last_played', 'ems_theme', 'ems_selected_avatar', 'ems_lb']; let data = {}; keys.forEach(k => { data[k] = localStorage.getItem(k); }); let base64Code = btoa(unescape(encodeURIComponent(JSON.stringify(data)))); prompt("Copiez ce code de sauvegarde Cloud :", base64Code); }
+
+function exportSave() { 
+    let keys = ['ems_xp', 'ems_errors', 'ems_games', 'ems_perfect', 'ems_mistakes_cat', 'ems_completed_modes', 'ems_streak', 'ems_last_played', 'ems_theme', 'ems_selected_avatar', 'ems_lb', 'ems_xp_history', 'ems_muted']; 
+    let data = {}; keys.forEach(k => { data[k] = localStorage.getItem(k); }); 
+    let base64Code = btoa(unescape(encodeURIComponent(JSON.stringify(data)))); 
+    prompt("Copiez ce code de sauvegarde Cloud :", base64Code); 
+}
 
 function importSave() { 
     let code = prompt("Collez votre code de sauvegarde Cloud ci-dessous :"); 
@@ -471,11 +498,29 @@ function importSave() {
 
 function resetAllStats() { 
     if(confirm("Effacer TOUTES les statistiques ? Cette action est irréversible.")) { 
-        let keys = ['ems_xp', 'ems_errors', 'ems_games', 'ems_perfect', 'ems_mistakes_cat', 'ems_completed_modes', 'ems_streak', 'ems_last_played', 'ems_theme', 'ems_selected_avatar', 'ems_lb']; 
+        let keys = ['ems_xp', 'ems_errors', 'ems_games', 'ems_perfect', 'ems_mistakes_cat', 'ems_completed_modes', 'ems_streak', 'ems_last_played', 'ems_theme', 'ems_selected_avatar', 'ems_lb', 'ems_xp_history', 'ems_muted']; 
         keys.forEach(k => localStorage.removeItem(k)); 
         alert("Réinitialisation réussie !"); 
         location.reload(); 
     } 
+}
+
+function toggleMute() {
+    isMuted = !isMuted;
+    localStorage.setItem('ems_muted', isMuted);
+    updateAudioButtonUI();
+}
+
+function updateAudioButtonUI() {
+    const btn = document.getElementById('audio-toggle-btn');
+    if (!btn) return;
+    if (isMuted) {
+        btn.innerHTML = `<i class="fas fa-volume-mute" style="color: var(--error);"></i>`;
+        btn.style.borderColor = 'var(--error)';
+    } else {
+        btn.innerHTML = `<i class="fas fa-volume-up" style="color: var(--primary);"></i>`;
+        btn.style.borderColor = '#2a2a38';
+    }
 }
 
 function endGame() {
@@ -500,6 +545,13 @@ function endGame() {
     }
 
     checkDailyStreak();
+    
+    // Archivage de l'XP collectée durant cet exercice dans l'historique
+    let xpHistory = getSafeLocalStorage('ems_xp_history', []);
+    xpHistory.push(sessionXpEarned);
+    if (xpHistory.length > 7) xpHistory.shift();
+    localStorage.setItem('ems_xp_history', JSON.stringify(xpHistory));
+
     let highscores = getSafeLocalStorage('ems_lb', []);
     highscores.push({ mode: modeName + (isPanicActive ? " 🚨" : ""), score: currentScore, time: finalTime, timestamp: Date.now() });
     highscores.sort((a, b) => b.score - a.score || a.time.localeCompare(b.time)); localStorage.setItem('ems_lb', JSON.stringify(highscores));
@@ -509,7 +561,7 @@ function endGame() {
     let diagMsg = mistakesByCat.s_errors > 5 ? "Faiblesse:-s_form" : mistakesByCat.negative > 3 ? "Faiblesse:Auxiliaires" : "Homogène";
     let shareText = `[PRESENT SIMPLE MASTERY] EXAM:${isExamMode?'OUI':'NON'} | Élève Lvl:${newLvl} | Catégorie: ${modeName} | Note: ${currentScore}/10 | Chrono: ${finalTime} | Profil:${diagMsg} | Verification: PS-${totalXp}X`;
     
-    let duelCode = btoa(unescape(encodeURIComponent(JSON.stringify({ challenger: localStorage.getItem('ems_selected_avatar') || "👤", score: currentScore, time: finalTime, qTexts: currentQuestions.map(q => q.text) }))));
+    let duelCode = btoa(unescape(encodeURIComponent(JSON.stringify({ challenger: localStorage.getItem('ems_selected_avatar'] || "👤", score: currentScore, time: finalTime, qTexts: currentQuestions.map(q => q.text) }))));
 
     let gz = document.getElementById('game-zone');
     if(gz) {
@@ -535,9 +587,6 @@ function endGame() {
     updateProfileUI();
 }
 
-// Remplacez le simple "resetGame();" tout en bas de script.js par ceci :
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', resetGame);
-} else {
-    resetGame();
-}
+// Initialisation UI et chargement au boot
+updateAudioButtonUI();
+resetGame();
