@@ -117,7 +117,7 @@ function syncThemeDropdown() {
 function saveTheme() { const select = document.getElementById('theme-select'); if(select) { localStorage.setItem('ems_theme', select.value); applyTheme(select.value); } }
 
 function playSound(type) {
-    if (isMuted || isExamMode) return; // Prise en compte de la condition de sourdine (Mute Toggle)
+    if (isMuted || isExamMode) return; 
     try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
         const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.connect(gain); gain.connect(ctx.destination);
@@ -261,7 +261,7 @@ function resetGame() {
     
     let gz = document.getElementById('game-zone'); if(gz) gz.innerHTML = initialGameZoneHtml;
     qIndex = 0; currentScore = 0; combo = 0; duelChallengerInfo = null;
-    sessionXpEarned = 0; // Remise à zéro du score d'XP de la session
+    sessionXpEarned = 0; 
     
     const modeSelect = document.getElementById('mode-select'); const mode = modeSelect ? modeSelect.value : 'affirmative';
     const isPanicActive = document.getElementById('panic-toggle') ? document.getElementById('panic-toggle').checked : false;
@@ -381,9 +381,8 @@ function handleCheck(qcmValue = null) {
     const oldLvl = calculateCurrentLevel();
 
     if (cleanInput === cleanAnswer) {
-        combo++; currentScore++; let mult = (combo >= 5) ? 3 : (combo >= 3) ? 2 : 1; if (isExamMode) mult = 1; 
-        totalXp += (10 * mult);
-        sessionXpEarned += (10 * mult); // Accumulation de l'XP de session
+        combo++; currentScore++; let mult = (combo >= 5) ? 3 : (combo >= 3) ? 2 : 1; if (isExamMode) mult = 1; totalXp += (10 * mult);
+        sessionXpEarned += (10 * mult); 
         
         if(!isExamMode && fb) { 
             fb.innerHTML = `<span style="color:var(--primary); font-weight:bold;">🔥 CORRECT ! ${mult > 1 ? '(COMBO x'+mult+')' : '(+10 XP)'}</span>`; 
@@ -436,11 +435,10 @@ function renderStats() {
     const container = document.getElementById('stats-container'); if (!container) return;
     let diag = (mistakesByCat.s_errors > 5) ? "⚠️ Règle des 3e personnes (-s / -es) non assimilée. Rappelle-toi : He/She/It prennent un -s !" : (mistakesByCat.negative > 5) ? "⚠️ Difficultés sur les négations. Révise l'utilisation de 'don't' et 'doesn't'." : (gamesPlayed === 0) ? "Aucun historique disponible. Termine d'abord un exercice !" : "✅ Excellent profil d'apprentissage. Compétences homogènes.";
     
-    // HISTORIQUE GRAPHIQUE : Préparation et calcul des barres d'XP
     let xpHistory = getSafeLocalStorage('ems_xp_history', []);
     let displayHistory = [...xpHistory];
-    while(displayHistory.length < 7) { displayHistory.unshift(0); } // Padder à 7 valeurs par défaut
-    let maxXp = Math.max(...displayHistory, 100); // Échelle minimale fixe à 100 XP
+    while(displayHistory.length < 7) { displayHistory.unshift(0); } 
+    let maxXp = Math.max(...displayHistory, 100); 
 
     let chartHtml = `
         <h3 style="color:white; font-family:'Orbitron'; margin-top:25px; font-size:1rem; border-bottom:1px solid #222230; padding-bottom:6px; letter-spacing:0.5px;">📈 Historique d'XP (7 dernières sessions)</h3>
@@ -472,13 +470,7 @@ function renderStats() {
 
 function copyScoreToClipboard(textToCopy) { navigator.clipboard.writeText(textToCopy).then(() => { alert("Code copié !"); }); }
 function checkDailyStreak() { let today = new Date().toDateString(); let lastPlayed = localStorage.getItem('ems_last_played'); let streak = parseInt(localStorage.getItem('ems_streak')) || 0; if (lastPlayed) { if (lastPlayed === today) return; let yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1); if (lastPlayed === yesterday.toDateString()) streak++; else streak = 1; } else { streak = 1; } localStorage.setItem('ems_streak', streak); localStorage.setItem('ems_last_played', today); }
-
-function exportSave() { 
-    let keys = ['ems_xp', 'ems_errors', 'ems_games', 'ems_perfect', 'ems_mistakes_cat', 'ems_completed_modes', 'ems_streak', 'ems_last_played', 'ems_theme', 'ems_selected_avatar', 'ems_lb', 'ems_xp_history', 'ems_muted']; 
-    let data = {}; keys.forEach(k => { data[k] = localStorage.getItem(k); }); 
-    let base64Code = btoa(unescape(encodeURIComponent(JSON.stringify(data)))); 
-    prompt("Copiez ce code de sauvegarde Cloud :", base64Code); 
-}
+function exportSave() { let keys = ['ems_xp', 'ems_errors', 'ems_games', 'ems_perfect', 'ems_mistakes_cat', 'ems_completed_modes', 'ems_streak', 'ems_last_played', 'ems_theme', 'ems_selected_avatar', 'ems_lb', 'ems_xp_history', 'ems_muted']; let data = {}; keys.forEach(k => { data[k] = localStorage.getItem(k); }); let base64Code = btoa(unescape(encodeURIComponent(JSON.stringify(data)))); prompt("Copiez ce code de sauvegarde Cloud :", base64Code); }
 
 function importSave() { 
     let code = prompt("Collez votre code de sauvegarde Cloud ci-dessous :"); 
@@ -511,6 +503,7 @@ function toggleMute() {
     updateAudioButtonUI();
 }
 
+// Correction ici pour récupérer le bon élément
 function updateAudioButtonUI() {
     const btn = document.getElementById('audio-toggle-btn');
     if (!btn) return;
@@ -546,7 +539,6 @@ function endGame() {
 
     checkDailyStreak();
     
-    // Archivage de l'XP collectée durant cet exercice dans l'historique
     let xpHistory = getSafeLocalStorage('ems_xp_history', []);
     xpHistory.push(sessionXpEarned);
     if (xpHistory.length > 7) xpHistory.shift();
@@ -561,7 +553,8 @@ function endGame() {
     let diagMsg = mistakesByCat.s_errors > 5 ? "Faiblesse:-s_form" : mistakesByCat.negative > 3 ? "Faiblesse:Auxiliaires" : "Homogène";
     let shareText = `[PRESENT SIMPLE MASTERY] EXAM:${isExamMode?'OUI':'NON'} | Élève Lvl:${newLvl} | Catégorie: ${modeName} | Note: ${currentScore}/10 | Chrono: ${finalTime} | Profil:${diagMsg} | Verification: PS-${totalXp}X`;
     
-    let duelCode = btoa(unescape(encodeURIComponent(JSON.stringify({ challenger: localStorage.getItem('ems_selected_avatar'] || "👤", score: currentScore, time: finalTime, qTexts: currentQuestions.map(q => q.text) }))));
+    // Correction de la parenthèse fermante ici (getItem au lieu de getItem])
+    let duelCode = btoa(unescape(encodeURIComponent(JSON.stringify({ challenger: localStorage.getItem('ems_selected_avatar') || "👤", score: currentScore, time: finalTime, qTexts: currentQuestions.map(q => q.text) }))));
 
     let gz = document.getElementById('game-zone');
     if(gz) {
