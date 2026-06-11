@@ -49,7 +49,8 @@ const avatarList = ["👤", "👟", "🎒", "🍪", "🎧", "🥷", "🎯", "�
 const menuBaseTexts = {
     "affirmative": "Formes Affirmatives", "negative": "Formes Négatives", "interrogative": "Formes Interrogatives",
     "short": "Réponses brèves", "qcm": "Mode QCM Mixte", "dictation": "🎧 Mode Dictée",
-    "daily": "📅 Le Défi du Jour", "random": "Tout mélangé", "revenge": "👿 Revenge Mode", "duel": "⚔️ Mode Défi"
+    "daily": "📅 Le Défi du Jour", "random": "Tout mélangé", "revenge": "👿 Revenge Mode", "duel": "⚔️ Mode Défi",
+    "lab": "🧪 Morphology Lab"
 };
 
 const vocabTranslations = {
@@ -189,7 +190,7 @@ function updateMenuStateAndColors() {
     const selectElem = document.getElementById('mode-select'); if (!selectElem) return;
     for (let i = 0; i < selectElem.options.length; i++) {
         let opt = selectElem.options[i]; let val = opt.value;
-        if (val === 'revenge' || val === 'duel') { opt.style.color = (val === 'revenge' && errorBook.length > 0) ? "#FF4D4D" : "#888888"; continue; }
+        if (val === 'revenge' || val === 'duel' || val === 'lab') { opt.style.color = (val === 'revenge' && errorBook.length > 0) ? "#FF4D4D" : "#888888"; continue; }
         if (completedModes.includes(val)) { opt.style.color = "#00FF85"; opt.text = `${menuBaseTexts[val]} (10 Qs) 🟢`; }
         else { opt.style.color = "#FF4D4D"; opt.text = `${menuBaseTexts[val]} (10 Qs) 🔴`; }
     }
@@ -264,6 +265,28 @@ function resetGame() {
     sessionXpEarned = 0; 
     
     const modeSelect = document.getElementById('mode-select'); const mode = modeSelect ? modeSelect.value : 'affirmative';
+    
+    // Visuels d'en-tête selon le mode (On cache le chrono et compteur pour le Sandbox Morphologique)
+    let pToggle = document.getElementById('panic-toggle-zone');
+    let qCounter = document.getElementById('q-counter-zone');
+    let timerDisp = document.getElementById('timer');
+    let audioBtn = document.getElementById('audio-listen-btn');
+
+    if (mode === 'lab') {
+        if(pToggle) pToggle.style.display = 'none';
+        if(qCounter) qCounter.style.display = 'none';
+        if(timerDisp) timerDisp.style.display = 'none';
+        if(audioBtn) audioBtn.style.display = 'none';
+        updateProfileUI();
+        initMorphologyLab();
+        return;
+    } else {
+        if(pToggle) pToggle.style.setProperty('display', 'block', 'important');
+        if(qCounter) qCounter.style.setProperty('display', 'flex', 'important');
+        if(timerDisp) timerDisp.style.setProperty('display', 'block', 'important');
+        if(audioBtn) audioBtn.style.setProperty('display', 'inline-block', 'important');
+    }
+
     const isPanicActive = document.getElementById('panic-toggle') ? document.getElementById('panic-toggle').checked : false;
     isQcmMode = (mode === 'qcm');
 
@@ -288,6 +311,84 @@ function resetGame() {
     
     updateProfileUI(); if (!isPanicActive) startNormalTimer();
     loadQuestion();
+}
+
+// INTÉGRATION : Logique du Morphology Sandbox (Laboratoire Orthographique Éducatif)
+function initMorphologyLab() {
+    let sentElem = document.getElementById('sentence');
+    let intZone = document.getElementById('interaction-zone');
+    if(!sentElem || !intZone) return;
+
+    sentElem.innerHTML = `🔬 <span style="color:var(--accent)">Morphology Lab</span> : Testez la règle de la 3e personne (He/She/It) sur le verbe de votre choix !`;
+    
+    intZone.innerHTML = `
+        <input type="text" id="lab-verb-input" placeholder="Entrez un verbe à l'infinitif (ex: study, play, watch...)" autocomplete="off">
+        <div class="lab-grid">
+            <button onclick="checkLabMorphology('s')">+ S</button>
+            <button onclick="checkLabMorphology('es')">+ ES</button>
+            <button onclick="checkLabMorphology('ies')">+ IES</button>
+        </div>
+    `;
+    let inputField = document.getElementById('lab-verb-input');
+    if(inputField) inputField.focus();
+}
+
+function checkLabMorphology(suffixRule) {
+    let inputField = document.getElementById('lab-verb-input');
+    let fb = document.getElementById('feedback');
+    if(!inputField || !fb) return;
+
+    let verb = inputField.value.trim().toLowerCase();
+    if(!verb) { fb.innerHTML = `<span style="color:var(--error); font-weight:bold;">Veuillez d'abord taper un verbe !</span>`; return; }
+
+    // Règles morphologiques du Present Simple anglais
+    let correctSuffix = "s";
+    let explanation = `Pour la majorité des verbes, on ajoute simplement un <b>-s</b> à la 3e personne du singulier.`;
+
+    if (verb.endsWith('ch') || verb.endsWith('sh') || verb.endsWith('ss') || verb.endsWith('x') || verb.endsWith('z') || verb.endsWith('o')) {
+        correctSuffix = "es";
+        explanation = `Les verbes se terminant par <b>-ch, -sh, -ss, -x, -z, ou -o</b> prennent la terminaison <b>-es</b> pour faciliter la prononciation.`;
+    } else if (verb.endsWith('y') && !['a','e','i','o','u'].includes(verb.charAt(verb.length - 2))) {
+        correctSuffix = "ies";
+        explanation = `Les verbes se terminant par une <b>consonne + Y</b> transforment leur Y en I et prennent la terminaison <b>-ies</b> (ex: study ➔ studies).`;
+    } else if (verb.endsWith('y') && ['a','e','i','o','u'].includes(verb.charAt(verb.length - 2))) {
+        correctSuffix = "s";
+        explanation = `Attention ! Le verbe se termine par une <b>voyelle + Y</b> (comme play ou enjoy). La règle du Y ne s'applique pas, on ajoute juste un <b>-s</b>.`;
+    }
+
+    let resultWord = "";
+    if (correctSuffix === "ies") {
+        resultWord = verb.slice(0, -1) + "ies";
+    } else {
+        resultWord = verb + correctSuffix;
+    }
+
+    if (suffixRule === correctSuffix) {
+        fb.innerHTML = `
+            <div class="error-highlight" style="border-left-color:var(--primary); background:rgba(0,255,133,0.04);">
+                <span style="color:var(--primary); font-weight:bold; font-family:'Orbitron'; font-size:1.2rem;">🔬 RECHERCHE RÉUSSIE !</span><br>
+                <p style="margin:5px 0; font-size:1.1rem;">He / She / It ➔ <b style="color:var(--primary); text-transform:uppercase;">${resultWord}</b></p>
+                <span style="color:#aaa; font-size:13px;">💡 ${explanation}</span>
+            </div>
+        `;
+        playSound('correct');
+        triggerConfetti();
+    } else {
+        // Effet d'explosion visuelle du laboratoire en cas d'erreur
+        fb.innerHTML = `
+            <div class="error-highlight">
+                <span style="color:var(--error); font-weight:bold; font-family:'Orbitron'; font-size:1.2rem;">💥 LAB EXPLOSION !</span><br>
+                <p style="margin:5px 0; font-size:1.1rem;">La formule a échoué. Vous avez appliqué <b style="color:var(--error)">+${suffixRule.toUpperCase()}</b>.</p>
+                <span style="color:#bbb; font-size:13px;">➔ Attendu : <b>${resultWord}</b> (+${correctSuffix.toUpperCase()})<br>💡 ${explanation}</span>
+            </div>
+        `;
+        playSound('wrong');
+        let mainCard = document.querySelector('.container');
+        if(mainCard) {
+            mainCard.style.animation = "shake 0.4s";
+            setTimeout(() => mainCard.style.animation = "", 400);
+        }
+    }
 }
 
 function startNormalTimer() {
@@ -503,7 +604,6 @@ function toggleMute() {
     updateAudioButtonUI();
 }
 
-// Correction ici pour récupérer le bon élément
 function updateAudioButtonUI() {
     const btn = document.getElementById('audio-toggle-btn');
     if (!btn) return;
@@ -553,7 +653,6 @@ function endGame() {
     let diagMsg = mistakesByCat.s_errors > 5 ? "Faiblesse:-s_form" : mistakesByCat.negative > 3 ? "Faiblesse:Auxiliaires" : "Homogène";
     let shareText = `[PRESENT SIMPLE MASTERY] EXAM:${isExamMode?'OUI':'NON'} | Élève Lvl:${newLvl} | Catégorie: ${modeName} | Note: ${currentScore}/10 | Chrono: ${finalTime} | Profil:${diagMsg} | Verification: PS-${totalXp}X`;
     
-    // Correction de la parenthèse fermante ici (getItem au lieu de getItem])
     let duelCode = btoa(unescape(encodeURIComponent(JSON.stringify({ challenger: localStorage.getItem('ems_selected_avatar') || "👤", score: currentScore, time: finalTime, qTexts: currentQuestions.map(q => q.text) }))));
 
     let gz = document.getElementById('game-zone');

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=no">
-    <title>Present Simple Mastery 5.1 | online-english.be</title>
+    <title>Present Simple Mastery 5.2 | online-english.be</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#030305">
@@ -85,6 +85,11 @@
         .leaderboard-list { margin: 0; padding: 0; list-style: none; }
         .leaderboard-list li { display: flex; justify-content: space-between; padding: 6px 10px; border-bottom: 1px solid #1a1a24; background: var(--surface-input); margin-bottom: 4px; border-radius: 8px; font-size: 0.95rem; }
 
+        /* Styles de la grille de boutons du Morphology Lab */
+        .lab-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+        .lab-grid button { background: #1a1a26; border: 2px solid #333344; color: #fff; font-family: 'Orbitron'; padding: 10px; font-weight: bold; border-radius: 10px; cursor: pointer; transition: 0.2s; }
+        .lab-grid button:hover { border-color: var(--accent); color: var(--accent); }
+
         .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(3,3,5,0.96); overflow-y: auto; padding: 15px; box-sizing: border-box; }
         .modal-content { background: var(--surface); margin: 20px auto; padding: 25px; border: 2px solid var(--primary); border-radius: 20px; max-width: 540px; position: relative; }
         .close { position: absolute; right: 18px; top: 14px; color: var(--error); font-size: 28px; cursor: pointer; }
@@ -135,9 +140,10 @@
             <option value="random">Tout mélangé</option>
             <option value="revenge">👿 Revenge Mode</option>
             <option value="duel">⚔️ Défi entre Camarades</option>
+            <option value="lab">🧪 Morphology Lab (Sandbox)</option>
         </select>
 
-        <div style="margin: 5px 0;">
+        <div style="margin: 5px 0;" id="panic-toggle-zone">
             <label style="color:var(--error); font-size:12px; font-weight:bold; cursor:pointer; user-select:none; display:inline-flex; align-items:center; gap:6px;">
                 <input type="checkbox" id="panic-toggle" onchange="resetGame()" style="width:auto; margin:0;"> 🚨 MODE PANIQUE
             </label>
@@ -147,13 +153,13 @@
             <div id="timer" class="timer">00:00</div>
             <div style="margin: 15px 0;">
                 <span id="sentence" style="font-size: 1.4rem; font-weight: bold; line-height: 1.4; display: inline-block;"></span>
-                <button onclick="listenSentence()" style="background:none; border:none; color:var(--secondary); font-size:1.5rem; cursor:pointer; vertical-align:middle; margin-left:6px;"><i class="fas fa-volume-up"></i></button>
+                <button id="audio-listen-btn" onclick="listenSentence()" style="background:none; border:none; color:var(--secondary); font-size:1.5rem; cursor:pointer; vertical-align:middle; margin-left:6px;"><i class="fas fa-volume-up"></i></button>
                 
                 <div id="vocab-hint-bar"></div>
             </div>
             <div id="interaction-zone"></div>
             <div id="feedback"></div>
-            <div style="display:flex; justify-content:flex-end; font-size:13px; opacity:0.6; font-weight:bold; font-family:'Orbitron';">
+            <div style="display:flex; justify-content:flex-end; font-size:13px; opacity:0.6; font-weight:bold; font-family:'Orbitron';" id="q-counter-zone">
                 <span>Q: <b id="current-q">1</b>/10</span>
             </div>
         </div>
