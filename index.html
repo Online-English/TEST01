@@ -2,299 +2,207 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>online-english.be - Vocabulaire des Animaux</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        brandPurple: '#7C3AED',
-                        brandNeonGreen: '#10B981',
-                        brandCoral: '#F43F5E',
-                        darkBg: '#0F172A',
-                        darkCard: '#1E293B'
-                    },
-                    boxShadow: {
-                        'neon-purple': '0 0 15px rgba(124, 58, 237, 0.3)',
-                        'neon-green': '0 0 15px rgba(16, 185, 129, 0.3)',
-                    }
-                }
-            }
-        }
-    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Present Simple Mastery 5.0 | online-english.be</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#030305">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="PS Mastery">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    
     <style>
-        .flashcard { perspective: 1000px; }
-        .flashcard-inner { transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); transform-style: preserve-3d; }
-        .flashcard.flipped .flashcard-inner { transform: rotateY(180deg); }
-        .flashcard-front, .flashcard-back { backface-visibility: hidden; border-radius: 1.5rem; }
-        .flashcard-back { transform: rotateY(180deg); }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
+        :root {
+            --bg: #030305;
+            --surface: #0c0c10;
+            --surface-input: #121218;
+            --primary: #00FF85; 
+            --secondary: #1E90FF; 
+            --accent: #FF007F; 
+            --error: #FF3B30; 
+            --text: #F4F4F6;
+        }
         
-        /* Animation Confettis */
-        .confetti {
-            position: fixed; width: 10px; height: 10px; z-index: 100;
-            animation: fall 3s linear forwards;
-        }
-        @keyframes fall {
-            0% { transform: translateY(-5vh) rotate(0deg); opacity: 1; }
-            100% { transform: translateY(105vh) rotate(360deg); opacity: 0; }
-        }
-        /* Custom scrollbar pour la nav ado */
-        .scrollbar-none::-webkit-scrollbar { display: none; }
-        .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+        body { background-color: var(--bg); color: var(--text); font-family: 'Rajdhani', sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+        header { width: 100%; padding: 12px; text-align: center; background: var(--surface); border-bottom: 2px solid #1a1a24; display: flex; justify-content: space-around; align-items: center; box-sizing: border-box; }
+        header a { color: var(--primary); text-decoration: none; font-weight: bold; font-family: 'Orbitron'; font-size: 0.85rem; letter-spacing: 1px; text-shadow: 0 0 8px rgba(0,255,133,0.3); }
+        .theme-tag { color: var(--secondary); font-family: 'Orbitron'; font-weight: 700; font-size: 0.8rem; margin-left: 3px; letter-spacing: 0.5px; }
+        
+        .nav-btn { background: none; border: 2px solid #2a2a38; color: var(--text); padding: 8px 14px; border-radius: 10px; cursor: pointer; font-family: 'Orbitron'; font-size: 0.7rem; font-weight: 700; transition: 0.2s ease; }
+        .nav-btn:hover { border-color: var(--primary); color: var(--primary); box-shadow: 0 0 10px rgba(0,255,133,0.2); }
+        
+        .progress-container { width: 100%; height: 6px; background: #121218; position: relative; }
+        .progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--secondary), var(--primary)); transition: width 0.4s ease; box-shadow: 0 0 12px var(--primary); }
+        .progress-bar.panic { background: var(--error) !important; box-shadow: 0 0 12px var(--error); animation: pulse 0.4s infinite alternate; }
+        
+        .container { width: 94%; max-width: 520px; background: var(--surface); padding: 20px 24px; border-radius: 24px; margin: 15px 0; box-shadow: 0 15px 50px rgba(0,0,0,0.8); border: 2px solid #1a1a24; position: relative; box-sizing: border-box; }
+        
+        .profile-zone { display: flex; flex-direction: column; background: var(--surface-input); padding: 12px 16px; border-radius: 16px; margin-bottom: 18px; border: 1px solid #222230; gap: 10px; }
+        .xp-display-box { font-weight: bold; font-family: 'Orbitron'; font-size: 0.8rem; text-align: center; width: 100%; letter-spacing: 0.5px; }
+        .profile-row-bottom { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        
+        .avatar-selector { background: #1a1a26; color: white; border: 2px solid #333344; padding: 8px; border-radius: 10px; font-size: 1rem; cursor: pointer; font-family: 'Rajdhani'; outline: none; font-weight: bold; -webkit-appearance: none; }
+        .lvl-tag { background: var(--secondary); color: white; padding: 4px 10px; border-radius: 8px; font-weight: bold; font-family: 'Orbitron'; font-size: 0.75rem; box-shadow: 0 0 8px rgba(30,144,255,0.4); display: inline-block; }
+        .combo-badge { color: gold; font-weight: bold; font-family: 'Orbitron'; font-size: 1.1rem; text-shadow: 0 0 8px rgba(255,215,0,0.4); }
+        
+        select, input { width: 100%; padding: 15px; margin: 10px 0; background: var(--surface-input); border: 2px solid #222230; border-radius: 14px; color: white; font-size: 16px; font-family: 'Rajdhani'; font-weight: 500; box-sizing: border-box; }
+        select:focus, input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 12px rgba(0,255,133,0.15); }
+        
+        .btn-main { background: linear-gradient(135deg, var(--primary), #00cc6a); color: #000; border: none; min-height: 50px; padding: 12px; border-radius: 14px; font-weight: 700; cursor: pointer; width: 100%; font-size: 1.1rem; font-family: 'Orbitron'; margin-top: 10px; transition: 0.1s ease; box-shadow: 0 4px 15px rgba(0,255,133,0.2); }
+        .btn-main:active { transform: scale(0.98); }
+        .btn-share { background: #1a1a26; color: white; border: 2px solid #333344; margin-top: 10px; width: 100%; font-family: 'Orbitron'; font-weight: 700; padding: 14px; border-radius: 12px; cursor: pointer; }
+        .btn-exam { background: none; border: 2px solid var(--secondary); color: var(--secondary); width: 100%; padding: 14px; border-radius: 12px; font-family: 'Orbitron'; font-weight: 700; cursor: pointer; margin-top: 25px; transition: 0.2s; }
+        .btn-exam:hover { background: rgba(30,144,255,0.1); }
+        
+        #feedback { min-height: 85px; margin: 15px 0; display: flex; flex-direction: column; justify-content: center; }
+        .error-highlight { background: rgba(255,59,48,0.06); padding: 14px; border-radius: 12px; border-left: 4px solid var(--error); text-align: left; font-size: 1rem; line-height: 1.4; }
+        .error-highlight del { color: var(--error); text-decoration: line-through; margin-right: 6px; font-weight: bold; }
+        .error-highlight ins { color: var(--primary); text-decoration: none; font-weight: 700; }
+        
+        .timer { font-size: 1.8rem; color: var(--secondary); font-weight: bold; font-family: 'Orbitron'; margin-bottom: 12px; letter-spacing: 1px; }
+        .timer.panic-text { color: var(--error) !important; animation: shake 0.2s infinite; }
+        
+        .options-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin: 15px 0; }
+        .options-grid button { background: var(--surface-input); color: white; border: 2px solid #222230; min-height: 48px; padding: 12px 16px; border-radius: 14px; font-size: 16px; cursor: pointer; font-weight: 700; text-align: left; font-family: 'Rajdhani'; width: 100%; box-sizing: border-box; transition: 0.2s; }
+        .options-grid button:hover { border-color: var(--secondary); background: #161622; }
+
+        .hint-word { border-bottom: 2px dashed var(--secondary); cursor: pointer; transition: color 0.2s; padding: 0 2px; }
+        .hint-word:hover { color: var(--primary); }
+        #vocab-hint-bar { min-height: 28px; font-size: 1rem; color: var(--accent); font-weight: 700; font-family: 'Rajdhani'; margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        .dashboard-section { background: #111114; padding: 15px; border-radius: 16px; margin-top: 20px; text-align: left; border: 1px solid #222230; }
+        .dashboard-section h3 { margin-top: 0; color: #fff; font-size: 0.95rem; text-transform: uppercase; font-family: 'Orbitron'; border-bottom: 1px solid #222230; padding-bottom: 5px; }
+        .badge-list { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 5px; }
+        .badge-item { background: var(--surface-input); padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; border: 1px solid #222230; color: #555566; font-weight: 700; }
+        .badge-item.unlocked { border-color: var(--primary); color: var(--primary); }
+        .leaderboard-list { margin: 0; padding: 0; list-style: none; }
+        .leaderboard-list li { display: flex; justify-content: space-between; padding: 6px 10px; border-bottom: 1px solid #1a1a24; background: var(--surface-input); margin-bottom: 4px; border-radius: 8px; font-size: 0.95rem; }
+
+        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(3,3,5,0.96); overflow-y: auto; padding: 15px; box-sizing: border-box; }
+        .modal-content { background: var(--surface); margin: 20px auto; padding: 25px; border: 2px solid var(--primary); border-radius: 20px; max-width: 540px; position: relative; }
+        .close { position: absolute; right: 18px; top: 14px; color: var(--error); font-size: 28px; cursor: pointer; }
+        .rule-card { background: var(--surface-input); padding: 15px; border-radius: 12px; margin-bottom: 14px; border-left: 4px solid var(--secondary); }
+        .stat-line { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #222230; font-size: 1.05rem; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 dark:bg-darkBg dark:text-slate-100 font-sans min-h-screen flex flex-col transition-colors duration-300">
+<body>
+    <header>
+        <button class="nav-btn" onclick="openModal('rule-modal')"><i class="fas fa-book-open"></i> REGLE</button>
+        <div>
+            <a href="https://online-english.be" target="_blank">ONLINE-ENGLISH.BE</a>
+            <span class="theme-tag">(PRESENT SIMPLE)</span>
+        </div>
+        <button class="nav-btn" onclick="openModal('stat-modal')"><i class="fas fa-chart-pie"></i> STATS</button>
+    </header>
+    <div class="progress-container"><div id="progress" class="progress-bar"></div></div>
 
-    <header class="bg-gradient-to-r from-brandPurple to-indigo-900 text-white p-4 shadow-lg sticky top-0 z-50">
-        <div class="container mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div class="flex items-center justify-between w-full sm:w-auto gap-6">
-                <h1 class="text-2xl font-black tracking-wider flex items-center gap-2 uppercase">
-                    <span class="text-brandCoral animate-bounce"><i class="fa-solid fa-paw"></i></span> online-english
-                </h1>
-                <button onclick="toggleDarkMode()" class="p-2.5 bg-white/10 rounded-xl hover:bg-white/20 hover:scale-110 active:scale-95 transition text-sm shadow-inner">
-                    <i id="theme-icon" class="fa-solid fa-moon text-yellow-300 text-base"></i>
-                </button>
+    <div class="container" id="main-card">
+        <div class="profile-zone">
+            <div id="player-xp-text" class="xp-display-box">0 / 500 XP</div>
+            
+            <div style="display: flex; gap: 6px; justify-content: center; width: 100%;">
+                <select id="avatar-select" onchange="saveAvatar()" class="avatar-selector" style="flex: 1;" title="Avatar"></select>
+                <select id="theme-select" onchange="saveTheme()" class="avatar-selector" style="flex: 1;" title="Skins"></select>
             </div>
             
-            <div class="flex flex-wrap items-center gap-3 justify-center">
-                <div class="bg-black/30 border border-white/10 text-white px-4 py-1.5 rounded-2xl text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
-                    ⚡ <span id="user-title" class="text-brandCoral">Novice des Animaux</span> <span class="opacity-60">|</span> Niv.<span id="user-level" class="text-brandNeonGreen">1</span>
+            <div class="profile-row-bottom">
+                <div style="display: inline-flex; align-items: center; gap: 6px;">
+                    <span id="player-lvl" class="lvl-tag">LVL 1</span>
+                    <span id="streak-display" style="font-family:'Orbitron'; font-weight:bold; color:var(--accent); font-size:1.1rem;">0 🔥</span>
                 </div>
-                <div class="bg-brandNeonGreen text-slate-900 px-4 py-1.5 rounded-2xl text-sm font-extrabold flex items-center gap-1.5 shadow-md">
-                    <i class="fa-solid fa-star text-slate-900"></i> <span id="total-points">0</span> XP
-                </div>
-                <div id="streak-badge" class="bg-brandCoral text-white px-4 py-1.5 rounded-2xl text-sm font-extrabold flex items-center gap-1.5 shadow-md animate-pulse">
-                    <i class="fa-solid fa-fire text-yellow-300"></i> <span id="streak-count">0</span>
-                </div>
+                <div id="combo-display" class="combo-badge"></div>
             </div>
         </div>
-    </header>
 
-    <nav class="bg-white/80 dark:bg-darkCard/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 overflow-x-auto whitespace-nowrap scrollbar-none sticky top-[132px] sm:top-[72px] z-40 shadow-sm transition-colors duration-300">
-        <div class="flex justify-start md:justify-center p-3 gap-2 container mx-auto" id="navigation-tabs">
-            <button onclick="switchTab(event, 'dict')" class="tab-btn bg-brandPurple text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all transform shadow-md hover:scale-105">
-                <i class="fa-solid fa-book-open mr-1.5"></i> Dico
-            </button>
-            <button onclick="switchTab(event, 'flash')" class="tab-btn bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-5 py-2.5 rounded-xl font-bold text-sm transition-all transform hover:bg-slate-200 dark:hover:bg-slate-700 hover:scale-105">
-                <i class="fa-solid fa-clone mr-1.5"></i> Flashcards
-            </button>
-            <button onclick="switchTab(event, 'quiz')" class="tab-btn bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-5 py-2.5 rounded-xl font-bold text-sm transition-all transform hover:bg-slate-200 dark:hover:bg-slate-700 hover:scale-105">
-                <i class="fa-solid fa-circle-question mr-1.5"></i> Quiz
-            </button>
-            <button onclick="switchTab(event, 'speak')" class="tab-btn bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-5 py-2.5 rounded-xl font-bold text-sm transition-all transform hover:bg-slate-200 dark:hover:bg-slate-700 hover:scale-105">
-              <i class="fa-solid fa-microphone mr-1.5"></i> Micro
-            </button>
-            <button onclick="switchTab(event, 'match')" class="tab-btn bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-5 py-2.5 rounded-xl font-bold text-sm transition-all transform hover:bg-slate-200 dark:hover:bg-slate-700 hover:scale-105">
-                <i class="fa-solid fa-puzzle-piece mr-1.5"></i> Match
-            </button>
-            <button onclick="switchTab(event, 'stats')" class="tab-btn bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-5 py-2.5 rounded-xl font-bold text-sm transition-all transform hover:bg-slate-200 dark:hover:bg-slate-700 hover:scale-105">
-                <i class="fa-solid fa-chart-simple mr-1.5"></i> Stats
-            </button>
-        </div>
-    </nav>
+        <select id="mode-select" onchange="resetGame()">
+            <option value="affirmative">Formes Affirmatives</option>
+            <option value="negative">Formes Négatives</option>
+            <option value="interrogative">Formes Interrogatives</option>
+            <option value="short">Réponses brèves</option>
+            <option value="qcm">Mode QCM Mixte</option>
+            <option value="dictation">🎧 Mode Dictée (Listening)</option>
+            <option value="daily">📅 Défi du Jour</option>
+            <option value="random">Tout mélangé</option>
+            <option value="revenge">👿 Revenge Mode</option>
+            <option value="duel">⚔️ Défi entre Camarades</option>
+        </select>
 
-    <main class="container mx-auto max-w-xl p-4 flex-grow mb-16">
-
-        <div class="mb-6 bg-white dark:bg-darkCard p-5 rounded-2xl shadow-md border border-slate-100 dark:border-slate-800">
-            <label class="block text-xs font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3 flex items-center gap-1.5">
-                <i class="fa-solid fa-layer-group text-brandPurple"></i> Catégories à débloquer :
+        <div style="margin: 5px 0;">
+            <label style="color:var(--error); font-size:12px; font-weight:bold; cursor:pointer; user-select:none; display:inline-flex; align-items:center; gap:6px;">
+                <input type="checkbox" id="panic-toggle" onchange="resetGame()" style="width:auto; margin:0;"> 🚨 MODE PANIQUE
             </label>
-            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2" id="vocab-level-selector">
-                <button onclick="setVocabLevel(1)" id="btn-vlevel-1" class="p-2.5 rounded-xl font-extrabold text-xs bg-brandPurple text-white shadow-md transition-all">Domestiques</button>
-                <button onclick="setVocabLevel(2)" id="btn-vlevel-2" class="p-2.5 rounded-xl font-extrabold text-xs bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600 border border-transparent cursor-not-allowed flex items-center justify-center gap-1 transition" disabled><i class="fa-solid fa-lock text-[10px]"></i> Niv.2</button>
-                <button onclick="setVocabLevel(3)" id="btn-vlevel-3" class="p-2.5 rounded-xl font-extrabold text-xs bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600 border border-transparent cursor-not-allowed flex items-center justify-center gap-1 transition" disabled><i class="fa-solid fa-lock text-[10px]"></i> Niv.3</button>
-                <button onclick="setVocabLevel(4)" id="btn-vlevel-4" class="p-2.5 rounded-xl font-extrabold text-xs bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600 border border-transparent cursor-not-allowed flex items-center justify-center gap-1 transition" disabled><i class="fa-solid fa-lock text-[10px]"></i> Niv.4</button>
-                <button onclick="setVocabLevel(5)" id="btn-vlevel-5" class="p-2.5 rounded-xl font-extrabold text-xs bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600 border border-transparent cursor-not-allowed flex items-center justify-center gap-1 transition" disabled><i class="fa-solid fa-lock text-[10px]"></i> Niv.5</button>
-            </div>
-            <p id="vocab-unlock-hint" class="text-[11px] text-slate-400 dark:text-slate-500 mt-2.5 text-center font-medium italic">🔥 Atteins le niveau joueur 3 pour débloquer le règne Aquatique !</p>
         </div>
 
-        <div class="mb-6 bg-white dark:bg-darkCard p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-sm">
-            <div class="flex items-center gap-3">
-                <label class="font-bold text-xs uppercase tracking-wider text-slate-400">Vitesse :</label>
-                <div class="inline-flex rounded-xl p-1 bg-slate-100 dark:bg-slate-800">
-                    <button id="speed-normal" onclick="setAudioSpeed(1.0)" class="px-3 py-1 bg-brandPurple text-white rounded-lg font-bold text-xs transition">1.0x</button>
-                    <button id="speed-slow" onclick="setAudioSpeed(0.6)" class="px-3 py-1 text-slate-600 dark:text-slate-300 font-bold text-xs rounded-lg flex items-center gap-1 transition">🐢 0.6x</button>
-                </div>
+        <div id="game-zone">
+            <div id="timer" class="timer">00:00</div>
+            <div style="margin: 5px 0;">
+                <span id="sentence" style="font-size: 1.4rem; font-weight: bold; line-height: 1.4; display: inline-block;"></span>
+                <button onclick="listenSentence()" style="background:none; border:none; color:var(--secondary); font-size:1.5rem; cursor:pointer; vertical-align:middle; margin-left:6px;"><i class="fas fa-volume-up"></i></button>
+                
+                <div id="vocab-hint-bar"></div>
             </div>
-            <div id="autoplay-container" class="hidden flex items-center gap-2">
-                <input type="checkbox" id="autoplay-checkbox" class="w-4 h-4 text-brandPurple border-slate-300 dark:border-slate-700 rounded focus:ring-brandPurple bg-slate-100 dark:bg-slate-800">
-                <label for="autoplay-checkbox" class="text-xs font-bold uppercase tracking-wider text-slate-400 cursor-pointer">Auto-play</label>
+            <div id="interaction-zone"></div>
+            <div id="feedback"></div>
+            <div style="display:flex; justify-content:flex-end; font-size:13px; opacity:0.6; font-weight:bold; font-family:'Orbitron';">
+                <span>Q: <b id="current-q">1</b>/10</span>
             </div>
         </div>
+    </div>
 
-        <section id="tab-dict" class="tab-content active space-y-4">
-            <div class="flex gap-2">
-                <div class="relative flex-grow">
-                    <input type="text" id="search-input" oninput="filterWords()" placeholder="Rechercher un animal..." class="w-full p-3.5 pl-11 border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-darkCard rounded-2xl focus:border-brandPurple dark:focus:border-brandPurple outline-none font-medium transition shadow-sm">
-                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-4.5 text-slate-400"></i>
-                </div>
-                <button onclick="toggleDirectionDico()" id="direction-filter-btn" class="px-4 bg-white dark:bg-darkCard border-2 border-slate-200 dark:border-slate-800 rounded-2xl text-slate-700 dark:text-slate-300 hover:border-brandPurple transition font-black text-xs flex items-center gap-1">
-                    <i class="fa-solid fa-right-left text-brandPurple"></i> <span id="direction-label">FR ➔ EN</span>
-                </button>
-                <button onclick="toggleFavFilter()" id="fav-filter-btn" class="px-4 bg-white dark:bg-darkCard border-2 border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400 hover:text-yellow-500 transition shadow-sm">
-                    <i class="fa-solid fa-star text-xl"></i>
-                </button>
-            </div>
-            <div id="dict-list" class="grid grid-cols-1 gap-3"></div>
-        </section>
+    <div id="rule-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('rule-modal')">&times;</span>
+            <h2 style="color:var(--primary); font-family:'Orbitron'; margin-top:0; font-size:1.4rem;">PRESENT SIMPLE : CHEAT SHEET</h2>
+            <div class="rule-card"><h3>AFFIRMATIVE</h3><p>I/You/We/They + <b>Base Verb</b><br>He/She/It + <b>Verb + s/es/ies</b></p></div>
+            <div class="rule-card"><h3>NEGATIVE</h3><p>I/You/We/They + <b>don't</b> + base verb<br>He/She/It + <b>doesn't</b> + base verb</p></div>
+            <div class="rule-card"><h3>INTERROGATIVE</h3><p><b>Do</b> + I/You/We/They + base verb?<br><b>Does</b> + He/She/It + base verb?</p></div>
+            <div class="rule-card"><h3>SHORT ANSWERS</h3><p>Yes, I <b>do</b>. / No, she <b>doesn't</b>.</p></div>
+        </div>
+    </div>
 
-        <section id="tab-flash" class="tab-content hidden space-y-6 text-center">
-            <div class="flex justify-center">
-                <button id="slideshow-btn" onclick="toggleSlideshow()" class="bg-brandNeonGreen text-slate-950 px-5 py-2.5 rounded-xl text-xs font-black tracking-wider uppercase shadow-md hover:scale-105 transition-all">
-                    <i class="fa-solid fa-play mr-1"></i> Lancer le Diaporama
-                </button>
-            </div>
-            <p class="text-xs text-slate-400 font-bold uppercase tracking-widest">Clique sur la carte pour l'animer</p>
-            <div class="flex justify-center my-4">
-                <div id="main-flashcard" class="flashcard w-72 h-96 cursor-pointer" onclick="this.classList.toggle('flipped')">
-                    <div class="flashcard-inner relative w-full h-full shadow-2xl rounded-3xl border-4 border-brandPurple/20 dark:border-slate-800">
-                        <div class="flashcard-front absolute w-full h-full bg-white dark:bg-darkCard rounded-3xl flex flex-col justify-between p-8">
-                            <span class="text-7xl my-auto animate-pulse" id="flash-emoji">🐶</span>
-                            <div>
-                                <h3 class="text-4xl font-black text-brandPurple dark:text-white tracking-wide" id="flash-en">Dog</h3>
-                                <button onclick="event.stopPropagation(); playAudio(document.getElementById('flash-en').innerText)" class="mt-4 bg-brandPurple text-white p-3 rounded-2xl hover:bg-brandCoral shadow-md transition-all hover:scale-110">
-                                    <i class="fa-solid fa-volume-high text-lg"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="flashcard-back absolute w-full h-full bg-gradient-to-br from-brandPurple to-indigo-900 text-white rounded-3xl flex flex-col justify-center items-center p-8">
-                            <span class="text-xs uppercase tracking-widest text-brandNeonGreen font-black mb-3">Traduction</span>
-                            <h3 class="text-4xl font-black tracking-wide" id="flash-fr">Chien</h3>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="flex justify-center gap-4">
-                <button id="flash-prev-btn" onclick="prevFlashcard()" class="bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 p-4 rounded-xl hover:bg-brandCoral hover:text-white transition w-20 shadow"><i class="fa-solid fa-arrow-left text-lg"></i></button>
-                <button id="flash-next-btn" onclick="nextFlashcard()" class="bg-brandPurple text-white p-4 rounded-xl hover:bg-brandCoral transition w-40 font-black uppercase text-xs tracking-wider shadow-lg">Suivant</button>
-            </div>
-        </section>
+    <div id="stat-modal" class="modal">
+        <div class="modal-content" style="border-color: var(--secondary);">
+            <span class="close" onclick="closeModal('stat-modal')">&times;</span>
+            <h2 style="color:var(--secondary); font-family:'Orbitron'; margin-top:0; font-size:1.4rem;">DIAGNOSTIC &amp; ANALYTIQUE PRO</h2>
+            
+            <div id="stats-container"></div>
+            
+            <h3 style="color:white; font-family:'Orbitron'; margin-top:20px; font-size:1rem; border-bottom:1px solid #222230; padding-bottom:6px;">🏆 Médailles de Progression (Max 90)</h3>
+            <div id="badges" class="badge-list"></div>
 
-        <section id="tab-quiz" class="tab-content hidden space-y-4">
-            <div id="quiz-mode-menu" class="bg-white dark:bg-darkCard p-6 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-800 text-center space-y-4">
-                <h3 class="text-lg font-black uppercase text-brandPurple tracking-wide">Choisis ton arène de jeu !</h3>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <button onclick="launchStandardQuiz()" class="bg-brandPurple text-white p-5 rounded-2xl font-black text-xs uppercase tracking-wider shadow-md hover:bg-opacity-95 hover:scale-[1.02] transition-all flex flex-col items-center gap-2">
-                        <i class="fa-solid fa-graduation-cap text-2xl text-brandNeonGreen"></i> Quiz Classique (10 mots)
-                    </button>
-                    <button onclick="launchTimeAttack()" class="bg-gradient-to-r from-brandCoral to-red-500 text-white p-5 rounded-2xl font-black text-xs uppercase tracking-wider shadow-md hover:scale-[1.02] transition-all flex flex-col items-center gap-2">
-                        <i class="fa-solid fa-stopwatch text-2xl animate-pulse text-yellow-300"></i> Speed Run (60s)
-                    </button>
-                </div>
+            <h3 style="color:white; font-family:'Orbitron'; margin-top:20px; font-size:1rem; border-bottom:1px solid #222230; padding-bottom:6px;">📊 Top 10 - Meilleurs Chronos</h3>
+            <ul id="leaderboard" class="leaderboard-list"></ul>
+            
+            <h3 style="color:white; font-family:'Orbitron'; margin-top:20px; font-size:1rem; border-bottom:1px solid #222230; padding-bottom:6px;">💾 Système de Cloud (Sauvegarde)</h3>
+            <div style="display:flex; gap:10px; margin-top:10px;">
+                <button class="nav-btn" style="flex:1; border-color:var(--primary); color:var(--primary);" onclick="exportSave()"><i class="fas fa-file-export"></i> EXPORTER</button>
+                <button class="nav-btn" style="flex:1; border-color:var(--secondary); color:var(--secondary);" onclick="importSave()"><i class="fas fa-file-import"></i> IMPORTER</button>
             </div>
 
-            <div id="quiz-classic-zone" class="hidden space-y-4">
-                <div class="bg-white dark:bg-darkCard p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex justify-between items-center font-bold text-sm">
-                    <span class="text-brandPurple uppercase tracking-wider">Question <span id="quiz-current" class="text-lg font-black">1</span>/10</span>
-                    <span class="text-brandNeonGreen uppercase tracking-wider">Score: <span id="quiz-score" class="text-lg font-black">0</span>/10</span>
-                </div>
-                <div class="bg-white dark:bg-darkCard p-8 rounded-3xl shadow-lg border-2 border-brandPurple/10 text-center space-y-2">
-                    <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest">Traduis ce mot :</p>
-                    <h2 class="text-4xl font-black text-brandPurple dark:text-white tracking-wide" id="quiz-question">Dog</h2>
-                </div>
-                <div id="quiz-options" class="grid grid-cols-1 gap-3"></div>
-            </div>
+            <button class="btn-exam" onclick="toggleExamMode()"><i class="fas fa-user-shield"></i> COMMENCER LE MODE EXAMEN</button>
+            <button class="btn-exam" style="border-color:var(--error); color:var(--error); margin-top:12px; background:none;" onclick="resetAllStats()"><i class="fas fa-trash-alt"></i> RÉINITIALISER TOUTES LES STATISTIQUES</button>
+        </div>
+    </div>
 
-            <div id="quiz-timeattack-zone" class="hidden space-y-4">
-                <div class="bg-white dark:bg-darkCard p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex justify-between items-center font-bold text-sm">
-                    <span class="text-brandCoral flex items-center gap-2 uppercase tracking-wider font-extrabold"><i class="fa-solid fa-clock text-lg animate-spin"></i> Chrono : <span id="ta-timer" class="font-black text-xl">60</span>s</span>
-                    <span class="text-brandNeonGreen uppercase tracking-wider font-extrabold">Combo : <span id="ta-score" class="font-black text-xl">0</span></span>
-                </div>
-                <div class="bg-gradient-to-br from-brandCoral/10 to-transparent bg-white dark:bg-darkCard p-8 rounded-3xl shadow-lg border-2 border-brandCoral/30 text-center space-y-2">
-                    <p class="text-[10px] text-brandCoral font-black uppercase tracking-widest">Go, go, go ! Enchaîne les mots !</p>
-                    <h2 class="text-4xl font-black text-slate-800 dark:text-white tracking-wide" id="ta-question">Cat</h2>
-                </div>
-                <div id="ta-options" class="grid grid-cols-1 gap-3"></div>
-            </div>
-        </section>
-
-        <section id="tab-speak" class="tab-content hidden space-y-4 text-center">
-            <div class="bg-white dark:bg-darkCard p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex justify-between items-center">
-                <span class="font-black uppercase text-xs tracking-wider text-slate-400">Battle Prononciation</span>
-                <span class="text-brandNeonGreen font-black uppercase text-xs tracking-wider">Mots Validés : <span id="speak-score" class="text-sm">0</span></span>
-            </div>
-            <div class="bg-white dark:bg-darkCard p-8 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-800 space-y-6">
-                <p class="text-slate-500 dark:text-slate-400 font-medium text-sm">Active le micro et prononce le nom en <span class="font-black text-brandPurple">Anglais</span> :</p>
-                
-                <div class="flex items-center justify-center gap-5 bg-slate-50 dark:bg-slate-900/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-800">
-                    <span class="text-6xl" id="speak-emoji">🐶</span>
-                    <h2 class="text-3xl font-black text-slate-800 dark:text-white tracking-wide" id="speak-prompt-fr">Chien</h2>
-                </div>
-
-                <div class="relative w-28 h-28 mx-auto flex items-center justify-center">
-                    <span id="mic-pulse" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brandCoral opacity-40 hidden"></span>
-                    <button id="mic-btn" onclick="startSpeechRecognition()" class="bg-gradient-to-tr from-brandCoral to-red-500 text-white w-24 h-24 rounded-full text-3xl shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center relative z-10">
-                        <i class="fa-solid fa-microphone"></i>
-                    </button>
-                </div>
-                
-                <p id="speech-status" class="text-xs font-black uppercase tracking-widest text-slate-400">Clique sur le micro pour parler</p>
-                <div id="speech-result" class="hidden text-sm font-bold p-4 rounded-2xl"></div>
-            </div>
-        </section>
-
-        <section id="tab-match" class="tab-content hidden space-y-4">
-            <p class="text-xs text-center text-slate-400 font-black uppercase tracking-widest mb-2">Connecte le mot Anglais (Violet) au Français (Rose)</p>
-            <div class="grid grid-cols-2 gap-3" id="matching-grid"></div>
-            <button onclick="initMatching()" class="w-full bg-slate-800 dark:bg-slate-700 text-white p-3.5 rounded-2xl font-black uppercase text-xs tracking-wider transition-all shadow-md hover:bg-slate-950">
-                <i class="fa-solid fa-shuffle mr-1"></i> Mélanger la grille
-            </button>
-        </section>
-
-        <section id="tab-stats" class="tab-content hidden space-y-5">
-            <div class="grid grid-cols-3 gap-3 text-center">
-                <div class="bg-white dark:bg-darkCard p-3 rounded-2xl shadow-md border-b-4 border-brandPurple">
-                    <span class="text-[10px] text-slate-400 uppercase tracking-wider block font-bold">Top Quiz</span>
-                    <span class="text-2xl font-black text-brandPurple dark:text-white" id="stat-high-quiz">0</span><span class="text-xs text-slate-400">/10</span>
-                </div>
-                <div class="bg-white dark:bg-darkCard p-3 rounded-2xl shadow-md border-b-4 border-brandNeonGreen">
-                    <span class="text-[10px] text-slate-400 uppercase tracking-wider block font-bold">Top Vocaux</span>
-                    <span class="text-2xl font-black text-brandNeonGreen dark:text-white" id="stat-high-speak">0</span>
-                </div>
-                <div class="bg-white dark:bg-darkCard p-3 rounded-2xl shadow-md border-b-4 border-brandCoral">
-                    <span class="text-[10px] text-slate-400 uppercase tracking-wider block font-bold">Speed Run</span>
-                    <span class="text-2xl font-black text-brandCoral dark:text-white" id="stat-high-timeattack">0</span>
-                </div>
-            </div>
-            <div class="bg-white dark:bg-darkCard p-4 rounded-2xl shadow-sm text-center border border-slate-100 dark:border-slate-800">
-                <span class="text-xs text-slate-400 uppercase tracking-wider block font-bold">Plus grande série d'invincibilité 🔥</span>
-                <span class="text-3xl font-black text-brandCoral" id="stat-max-streak">0</span> <span class="text-sm text-slate-400 font-bold">Bonnes réponses d'affilée</span>
-            </div>
-
-            <div class="bg-white dark:bg-darkCard p-5 rounded-3xl shadow border border-slate-100 dark:border-slate-800">
-                <h3 class="font-black text-xs text-brandPurple uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <i class="fa-solid fa-trophy text-yellow-400 text-sm animate-pulse"></i> Vitrine de mes Badges
-                </h3>
-                <div id="badges-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
-            </div>
-
-            <div class="bg-white dark:bg-darkCard p-5 rounded-3xl shadow border border-slate-100 dark:border-slate-800">
-                <h3 class="font-black text-xs text-brandCoral uppercase tracking-widest mb-2 flex items-center gap-2">
-                    <i class="fa-solid fa-graduation-cap text-sm"></i> Zone d'entraînement (Mes erreurs)
-                </h3>
-                <p class="text-[11px] text-slate-400 mb-4 font-medium leading-relaxed">Ces mots reviendront en priorité dans tes sessions de jeux pour t'aider à les maîtriser.</p>
-                <div id="error-history-list" class="space-y-2.5 max-h-52 overflow-y-auto pr-1 text-sm"></div>
-            </div>
-
-            <button onclick="resetStats()" class="w-full bg-red-50 text-red-500 border border-red-200 dark:bg-red-950/20 dark:border-red-900/30 p-3 rounded-2xl text-xs font-black uppercase tracking-wider transition hover:bg-red-100">
-                Réinitialiser mon compte joueur
-            </button>
-        </section>
-
-    </main>
-
-    <footer class="bg-slate-900 text-slate-400 text-center py-4 text-xs mt-auto border-t border-slate-800">
-        &copy; 2026 online-english.be - Game on.
-    </footer>
-
-    <script src="script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="relay.js"></script>
+    <script src="script.js"></script>
+    
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('PWA Service Worker actif !', reg))
+                    .catch(err => console.error('Erreur Service Worker:', err));
+            });
+        }
+    </script>
 </body>
 </html>

@@ -1,377 +1,543 @@
-// --- BASE DE DONNÉES CONSOLIDÉE (100 Animaux sur 5 Niveaux) ---
-const fruitsData = [
-    // NIVEAU 1 : Animaux domestiques & de la ferme (20 mots)
-    { en: "Dog", fr: "Chien", emoji: "🐶", level: 1 },
-    { en: "Cat", fr: "Chat", emoji: "🐱", level: 1 },
-    { en: "Rabbit", fr: "Lapin", emoji: "🐰", level: 1 },
-    { en: "Mouse", fr: "Souris", emoji: "🐭", level: 1 },
-    { en: "Cow", fr: "Vache", emoji: "🐮", level: 1 },
-    { en: "Pig", fr: "Cochon", emoji: "🐷", level: 1 },
-    { en: "Sheep", fr: "Mouton", emoji: "🐑", level: 1 },
-    { en: "Goat", fr: "Chèvre", emoji: "🐐", level: 1 },
-    { en: "Horse", fr: "Cheval", emoji: "🐴", level: 1 },
-    { en: "Donkey", fr: "Âne", emoji: "🫏", level: 1 },
-    { en: "Chicken", fr: "Poule / Poulet", emoji: "🐔", level: 1 },
-    { en: "Duck", fr: "Canard", emoji: "🦆", level: 1 },
-    { en: "Turkey", fr: "Dindon", emoji: "🦃", level: 1 },
-    { en: "Goose", fr: "Oie", emoji: "🪿", level: 1 },
-    { en: "Pigeon", fr: "Pigeon", emoji: "🐦", level: 1 },
-    { en: "Rooster", fr: "Coq", emoji: "🐓", level: 1 },
-    { en: "Hamster", fr: "Hamster", emoji: "🐹", level: 1 },
-    { en: "Parrot", fr: "Perroquet", emoji: "🦜", level: 1 },
-    { en: "Goldfish", fr: "Poisson rouge", emoji: "🐠", level: 1 },
-    { en: "Turtle", fr: "Tortue", emoji: "🐢", level: 1 },
+// script.js
+let currentScore = 0, qIndex = 0, currentQuestions = [], isExamMode = false, isQcmMode = false;
+let timerInterval, startTime, panicTimer, panicTimeLeft, combo = 0;
+let duelChallengerInfo = null; 
+let roundPool = []; // Pool de secours global pour le suivi adaptatif phrase par phrase
+let nextQuestionTimeout = null; // Protège contre les collisions de menus déroulants
 
-    // NIVEAU 2 : Animaux aquatiques & marins (20 mots)
-    { en: "Fish", fr: "Poisson", emoji: "🐟", level: 2 },
-    { en: "Shark", fr: "Requin", emoji: "🦈", level: 2 },
-    { en: "Dolphin", fr: "Dauphin", emoji: "🐬", level: 2 },
-    { en: "Whale", fr: "Baleine", emoji: "🐳", level: 2 },
-    { en: "Octopus", fr: "Pieuvre", emoji: "🐙", level: 2 },
-    { en: "Crab", fr: "Crabe", emoji: "🦀", level: 2 },
-    { en: "Lobster", fr: "Homard", emoji: "🦞", level: 2 },
-    { en: "Shrimp", fr: "Crevette", emoji: "🦐", level: 2 },
-    { en: "Squid", fr: "Calamar", emoji: "🦑", level: 2 },
-    { en: "Jellyfish", fr: "Méduse", emoji: "🪼", level: 2 },
-    { en: "Starfish", fr: "Étoile de mer", emoji: "⭐", level: 2 },
-    { en: "Seahorse", fr: "Hippocampe", emoji: "🐴", level: 2 },
-    { en: "Seal", fr: "Phoque", emoji: "🦭", level: 2 },
-    { en: "Walrus", fr: "Morse", emoji: "🦭", level: 2 },
-    { en: "Penguin", fr: "Manchot / Pingouin", emoji: "🐧", level: 2 },
-    { en: "Otter", fr: "Loutre", emoji: "🦦", level: 2 },
-    { en: "Beaver", fr: "Castor", emoji: "🦫", level: 2 },
-    { en: "Frog", fr: "Grenouille", emoji: "🐸", level: 2 },
-    { en: "Toad", fr: "Crapaud", emoji: "🐸", level: 2 },
-    { en: "Crocodile", fr: "Crocodile", emoji: "🐊", level: 2 },
+const initialGameZoneHtml = document.getElementById('game-zone').innerHTML;
 
-    // NIVEAU 3 : Oiseaux & Insectes volants (20 mots)
-    { en: "Eagle", fr: "Aigle", emoji: "🦅", level: 3 },
-    { en: "Owl", fr: "Hibou / Chouette", emoji: "🦉", level: 3 },
-    { en: "Falcon", fr: "Faucon", emoji: "🦅", level: 3 },
-    { en: "Crow", fr: "Corbeau", emoji: "🐦", level: 3 },
-    { en: "Swan", fr: "Cygne", emoji: "<b></b>🦢", level: 3 },
-    { en: "Flamingo", fr: "Flamant rose", emoji: "🦩", level: 3 },
-    { en: "Peacock", fr: "Paon", emoji: "🦚", level: 3 },
-    { en: "Bat", fr: "Chauve-souris", emoji: "🦇", level: 3 },
-    { en: "Bee", fr: "Abeille", emoji: "🐝", level: 3 },
-    { en: "Ant", fr: "Fourmi", emoji: "🐜", level: 3 },
-    { en: "Butterfly", fr: "Papillon", emoji: "🦋", level: 3 },
-    { en: "Ladybug", fr: "Coccinelle", emoji: "🐞", level: 3 },
-    { en: "Mosquito", fr: "Moustique", emoji: "🦟", level: 3 },
-    { en: "Fly", fr: "Mouche", emoji: "🪰", level: 3 },
-    { en: "Spider", fr: "Araignée", emoji: "🕷️", level: 3 },
-    { en: "Cricket", fr: "Criquet / Grillon", emoji: "🦗", level: 3 },
-    { en: "Dragonfly", fr: "Libellule", emoji: "🪰", level: 3 },
-    { en: "Caterpillar", fr: "Chenille", emoji: "🐛", level: 3 },
-    { en: "Snail", fr: "Escargot", emoji: "🐌", level: 3 },
-    { en: "Worm", fr: "Ver", emoji: "🪱", level: 3 },
-
-    // NIVEAU 4 : Animaux de la jungle & de la savane (20 mots)
-    { en: "Lion", fr: "Lion", emoji: "🦁", level: 4 },
-    { en: "Tiger", fr: "Tigre", emoji: "🐯", level: 4 },
-    { en: "Leopard", fr: "Léopard", emoji: "🐆", level: 4 },
-    { en: "Cheetah", fr: "Guépard", emoji: "🐆", level: 4 },
-    { en: "Elephant", fr: "Éléphant", emoji: "🐘", level: 4 },
-    { en: "Zebra", fr: "Zèbre", emoji: "🦓", level: 4 },
-    { en: "Giraffe", fr: "Girafe", emoji: "🦒", level: 4 },
-    { en: "Gorilla", fr: "Gorille", emoji: "🦍", level: 4 },
-    { en: "Monkey", fr: "Singe", emoji: "🐒", level: 4 },
-    { en: "Chimpanzee", fr: "Chimpanzé", emoji: "🦧", level: 4 },
-    { en: "Hippo", fr: "Hippopotame", emoji: "🦛", level: 4 },
-    { en: "Rhino", fr: "Rhinocéros", emoji: "🦏", level: 4 },
-    { en: "Kangaroo", fr: "Kangourou", emoji: "🦘", level: 4 },
-    { en: "Koala", fr: "Koala", emoji: "🐨", level: 4 },
-    { en: "Panda", fr: "Panda", emoji: "🐼", level: 4 },
-    { en: "Sloth", fr: "Paresseux", emoji: "🦥", level: 4 },
-    { en: "Camel", fr: "Chameau", emoji: "🐪", level: 4 },
-    { en: "Hyena", fr: "Hyène", emoji: "🦧", level: 4 },
-    { en: "Ostrich", fr: "Autruche", emoji: "🦩", level: 4 },
-    { en: "Bear", fr: "Ours", emoji: "🐻", level: 4 },
-
-    // NIVEAU 5 : Animaux de la forêt & zones polaires (20 mots)
-    { en: "Wolf", fr: "Loup", emoji: "🐺", level: 5 },
-    { en: "Fox", fr: "Renard", emoji: "🦊", level: 5 },
-    { en: "Deer", fr: "Cerf / Biche", emoji: "🦌", level: 5 },
-    { en: "Moose", fr: "Élan", emoji: "🫎", level: 5 },
-    { en: "Squirrel", fr: "Écureuil", emoji: "🐿️", level: 5 },
-    { en: "Hedgehog", fr: "Hérisson", emoji: "🦔", level: 5 },
-    { en: "Raccoon", fr: "Raton laveur", emoji: "🦝", level: 5 },
-    { en: "Skunk", fr: "Moufette", emoji: "🦨", level: 5 },
-    { en: "Badger", fr: "Blaireau", emoji: "🦡", level: 5 },
-    { en: "Polar bear", fr: "Ours polaire", emoji: "🐻‍❄️", level: 5 },
-    { en: "Arctic fox", fr: "Renard polaire", emoji: "🦊", level: 5 },
-    { en: "Reindeer", fr: "Renne / Caribou", emoji: "🦌", level: 5 },
-    { en: "Boar", fr: "Sanglier", emoji: "🐗", level: 5 },
-    { en: "Snake", fr: "Serpent", emoji: "🐍", level: 5 },
-    { en: "Lizard", fr: "Lézard", emoji: "🦎", level: 5 },
-    { en: "Chameleon", fr: "Caméléon", emoji: "🦎", level: 5 },
-    { en: "Scorpion", fr: "Scorpion", emoji: "🦂", level: 5 },
-    { en: "Echidna", fr: "Echidné", emoji: "🦔", level: 5 }, // 🟢 Corrigé (Echidna)
-    { en: "Lynx", fr: "Lynx", emoji: "🐱", level: 5 },       // 🟢 Corrigé (Lynx)
-    { en: "Sea lion", fr: "Otarie", emoji: "🦭", level: 5 }   // 🟢 Corrigé (Sea lion)
-];
-
-// --- ÉTATS GÉNÉRAUX & STATISTIQUES ---
-let currentStreak = 0, maxStreak = 0, totalPoints = 0;
-let highScores = { quiz: 0, speak: 0, timeattack: 0 };
-let favoriteFruits = [];
-let errorHistory = []; 
-let unlockedBadges = []; 
-let audioSpeed = 1.0;
-let filterOnlyFavs = false;
-let searchDirection = 'EN_FR';
-let globalAudioCtx = null; // Instance unique partagée 
-let selectedVocabularyLevel = 1; 
-
-// --- CONFIGURATION DES BADGES ---
-const badgesDatabase = [
-    { id: "first_perfect", title: "Zéro Faute !", desc: "Fais un sans-faute 10/10 en mode Quiz", icon: "🥇", color: "bg-gradient-to-tr from-yellow-400 to-amber-500" },
-    { id: "streak_15", title: "Godmode", desc: "Enchaîne 15 bonnes réponses d'affilée", icon: "🔥", color: "bg-brandCoral" },
-    { id: "time_20", title: "Speedrunner", desc: "Marque 20 points en Speed Run", icon: "⚡", color: "bg-cyan-500" },
-    { id: "polyglotte", title: "Master Zoo", desc: "Débloque la catégorie Aquatique", icon: "👑", color: "bg-brandPurple" }
-];
-
-// --- ALGORITHME DE RÉPÉTITION ESPACÉE ---
-function getNextExerciseWord() {
-    const currentLevelWords = fruitsData.filter(f => f.level === parseInt(selectedVocabularyLevel));
-    const currentLevelErrors = errorHistory.filter(err => err.level === parseInt(selectedVocabularyLevel));
-
-    if (currentLevelErrors.length > 0 && Math.random() < 0.35) {
-        return currentLevelErrors[Math.floor(Math.random() * currentLevelErrors.length)];
-    }
-    return currentLevelWords[Math.floor(Math.random() * currentLevelWords.length)];
-}
-
-// --- LOGIQUE DES BADGES ---
-function checkAndUnlockBadge(badgeId) {
-    if (!unlockedBadges.includes(badgeId)) {
-        unlockedBadges.push(badgeId);
-        localStorage.setItem('oe_unlocked_badges_anim', JSON.stringify(unlockedBadges));
-        triggerConfetti();
-        if(typeof renderBadgesUI === 'function') renderBadgesUI();
-    }
-}
-
-// --- MODULE AUDIO DE HAUTE PRÉCISION (CORRIGÉ) ---
-let preferredVoice = null;
-
-// Fonction de sélection de la meilleure voix disponible sur l'appareil
-function initVoices() {
-    if (!('speechSynthesis' in window)) return;
-    
-    const voices = window.speechSynthesis.getVoices();
-    if (voices.length === 0) return; // Le navigateur n'est pas encore prêt
-
-    // Stratégie de sélection en 3 étapes :
-    // 1. On cherche une voix anglaise moderne (Google, Natural, Neural ou Premium)
-    let bestVoice = voices.find(voice => 
-        voice.lang.toLowerCase().startsWith('en') && 
-        (voice.name.includes('Google') || voice.name.includes('Natural') || voice.name.includes('Neural') || voice.name.includes('Premium'))
-    );
-
-    // 2. Si pas trouvé, on cherche une voix anglaise qui n'est PAS une vieille voix "Desktop" de Microsoft
-    if (!bestVoice) {
-        bestVoice = voices.find(voice => 
-            voice.lang.toLowerCase().startsWith('en') && !voice.name.includes('Desktop')
-        );
-    }
-
-    // 3. En dernier recours, on prend la première voix anglaise standard qui vient
-    if (!bestVoice) {
-        bestVoice = voices.find(voice => voice.lang.toLowerCase().startsWith('en'));
-    }
-
-    // On mémorise la voix pour éviter de refaire la recherche à chaque clic
-    if (bestVoice) {
-        preferredVoice = bestVoice;
-    }
-}
-
-// Écouteur crucial : déclenché dès que le navigateur a fini de charger sa base de données vocales
-if ('speechSynthesis' in window) {
-    if (window.speechSynthesis.onvoiceschanged !== undefined) {
-        window.speechSynthesis.onvoiceschanged = initVoices;
-    }
-    initVoices(); // Premier essai immédiat au cas où elles seraient déjà prêtes
-}
-
-function setAudioSpeed(speed) {
-    audioSpeed = speed;
-    const btnNormal = document.getElementById('speed-normal');
-    const btnSlow = document.getElementById('speed-slow');
-    if (btnNormal && btnSlow) {
-        if (speed === 1.0) {
-            btnNormal.className = "px-2 py-1 bg-brandBlue text-white rounded font-bold";
-            btnSlow.className = "px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded flex items-center gap-1";
-        } else {
-            btnNormal.className = "px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded font-bold";
-            btnSlow.className = "px-2 py-1 bg-brandBlue text-white rounded flex items-center gap-1";
-        }
-    }
-}
-
-function playAudio(text) {
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); // Stoppe net toute lecture en cours
+// Fonction utilitaire de chargement sécurisé contre les données locales corrompues ou obsolètes
+function getSafeLocalStorage(key, defaultVal) {
+    try {
+        const item = localStorage.getItem(key);
+        if (!item) return defaultVal;
+        const parsed = JSON.parse(item);
         
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'en-US';
-        utterance.rate = audioSpeed;
-
-        // Si la voix n'a pas pu être choisie au démarrage, on fait une tentative de secours
-        if (!preferredVoice) initVoices();
-
-        if (preferredVoice) {
-            utterance.voice = preferredVoice;
-        }
-
-        window.speechSynthesis.speak(utterance);
-    } else {
-        // Fallback ultime si l'appareil ne supporte aucune synthèse vocale native
-        const encodedText = encodeURIComponent(text.toLowerCase());
-        const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&q=${encodedText}`;
-        const audio = new Audio(audioUrl);
-        audio.playbackRate = audioSpeed;
-        audio.play().catch(e => console.log("Audio playback failed:", e));
+        // Garantie absolue de type pour éviter les blocages sur .slice() / .push() / .includes()
+        if (Array.isArray(defaultVal) && !Array.isArray(parsed)) return defaultVal;
+        if (typeof defaultVal === 'object' && defaultVal !== null && !Array.isArray(defaultVal) && (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed))) return defaultVal;
+        
+        return parsed;
+    } catch (e) {
+        console.warn("Données LocalStorage corrompues détectées pour la clé : " + key);
+        return defaultVal;
     }
 }
 
+// Chargement LocalStorage blindé
+let totalXp = parseInt(localStorage.getItem('ems_xp')) || 0;
+let errorBook = getSafeLocalStorage('ems_errors', []);
+let gamesPlayed = parseInt(localStorage.getItem('ems_games')) || 0;
+let perfectStreaks = parseInt(localStorage.getItem('ems_perfect')) || 0;
+let mistakesByCat = getSafeLocalStorage('ems_mistakes_cat', { affirmative: 0, negative: 0, interrogative: 0, short: 0, s_errors: 0 });
 
-function playSoundEffect(type) {
-    if (!window.AudioContext && !window.webkitAudioContext) return;
-    
-    // Initialisation paresseuse au premier clic utilisateur
-    if (!globalAudioCtx) {
-        globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    
-    // Sort de la mise en veille si le navigateur avait bloqué le flux audio
-    if (globalAudioCtx.state === 'suspended') {
-        globalAudioCtx.resume();
-    }
+const themes = {
+    "vert": { primary: "#00FF85", secondary: "#1E90FF", accent: "#FF007F" },
+    "bleu": { primary: "#1E90FF", secondary: "#00FF85", accent: "#FFD700" },
+    "rose": { primary: "#FF007F", secondary: "#1E90FF", accent: "#00FF85" },
+    "jaune": { primary: "#FFD700", secondary: "#FF007F", accent: "#1E90FF" },
+    "rouge": { primary: "#FF3B30", secondary: "#FFD700", accent: "#00FF85" },
+    "violet": { primary: "#A020F0", secondary: "#00FF85", accent: "#FF007F" }
+};
 
-    const osc = globalAudioCtx.createOscillator();
-    const gain = globalAudioCtx.createGain();
-    osc.connect(gain);
-    gain.connect(globalAudioCtx.destination);
+const avatarList = ["👤", "Sneakers", "Bag", "Cookie", "Headphones", "Ninja", "Target", "Wizard", "Rocket", "Robot", "Dragon", "Crown"];
 
-    if (type === 'success') {
-        osc.frequency.setValueAtTime(523.25, globalAudioCtx.currentTime);
-        osc.frequency.setValueAtTime(659.25, globalAudioCtx.currentTime + 0.1);
-        gain.gain.setValueAtTime(0.1, globalAudioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, globalAudioCtx.currentTime + 0.3);
-        osc.start(); osc.stop(globalAudioCtx.currentTime + 0.3);
-    } else if (type === 'fail') {
-        osc.frequency.setValueAtTime(196.00, globalAudioCtx.currentTime);
-        osc.frequency.setValueAtTime(146.83, globalAudioCtx.currentTime + 0.15);
-        gain.gain.setValueAtTime(0.15, globalAudioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, globalAudioCtx.currentTime + 0.4);
-        osc.start(); osc.stop(globalAudioCtx.currentTime + 0.4);
+const menuBaseTexts = {
+    "affirmative": "Formes Affirmatives", "negative": "Formes Négatives", "interrogative": "Formes Interrogatives",
+    "short": "Réponses brèves", "qcm": "Mode QCM Mixte", "dictation": "🎧 Mode Dictée",
+    "daily": "📅 Le Défi du Jour", "random": "Tout mélangé", "revenge": "👿 Revenge Mode", "duel": "⚔️ Mode Défi"
+};
+
+const vocabTranslations = {
+    "football": "ballon de football ⚽", "video": "jeux vidéo 🎮", "games": "jeux vidéo 🎮", "movies": "films 🎬",
+    "gym": "salle de sport 🏋️", "history": "histoire 📚", "pizza": "pizza 🍕", "burgers": "hamburgers 🍔",
+    "french": "français 🇫🇷", "spanish": "espagnol 🇪🇸", "books": "livres 📚", "magazines": "magazines 📰",
+    "music": "musique 🎵", "podcasts": "podcasts 🎙️", "car": "voiture 🚗", "dishes": "vaisselle 🍽️",
+    "london": "Londres 🇬🇧", "paris": "Paris 🇫🇷", "school": "école 🏫", "office": "bureau 🏢",
+    "truck": "camion 🚛", "morning": "matin 🌅", "chocolate": "chocolat 🍫", "vegetables": "légumes 🥦",
+    "milk": "lait 🥛", "soda": "soda 🥤", "dinner": "dîner 🍽️", "meals": "repas 🍲", "room": "chambre 🛏️",
+    "house": "maison 🏠", "emails": "e-mails 📧", "stories": "histoires 📖", "songs": "chansons 🎤",
+    "math": "mathématiques 📐", "languages": "langues 🌐", "drone": "drone 🛸", "kites": "cerfs-volants 🪁",
+    "europe": "Europe 🇪🇺", "world": "monde 🌍", "new": "nouveaux vêtements 👕", "clothes": "vêtements 👕", "shoes": "chaussures 👟",
+    "pictures": "images 🖼️", "walls": "murs 🧱", "spinach": "épinards 🥬", "answer": "réponse 📝"
+};
+
+function verifyStreakOnLoad() {
+    let today = new Date().toDateString();
+    let lastPlayed = localStorage.getItem('ems_last_played');
+    if (lastPlayed && lastPlayed !== today) {
+        let yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+        if (lastPlayed !== yesterday.toDateString()) {
+            localStorage.setItem('ems_streak', 0); 
+        }
     }
+}
+verifyStreakOnLoad();
+
+function openModal(id) { 
+    let el = document.getElementById(id); if(el) el.style.display = "block"; 
+    if(id === 'stat-modal') renderStats(); 
+}
+function closeModal(id) { let el = document.getElementById(id); if(el) el.style.display = "none"; }
+
+function toggleExamMode() {
+    if(!isExamMode) {
+        let pw = prompt("Entrez le mot de passe Professeur (online123) :");
+        if(pw === "online123") { isExamMode = true; closeModal('stat-modal'); alert("Mode EXAMEN activé."); resetGame(); }
+        else alert("Accès refusé.");
+    } else { isExamMode = false; closeModal('stat-modal'); alert("Mode EXAMEN désactivé."); resetGame(); }
+}
+
+function applyTheme(themeName) {
+    let t = themes[themeName] || themes["vert"];
+    document.documentElement.style.setProperty('--bg', '#030305');
+    document.documentElement.style.setProperty('--surface', '#0c0c10');
+    document.documentElement.style.setProperty('--primary', t.primary);
+    document.documentElement.style.setProperty('--secondary', t.secondary);
+    document.documentElement.style.setProperty('--accent', t.accent);
+}
+
+function syncThemeDropdown() {
+    const select = document.getElementById('theme-select'); if(!select) return;
+    let currentLvl = calculateCurrentLevel(); let savedTheme = localStorage.getItem('ems_theme') || "vert";
+    const themeList = [
+        { id: "vert", name: "🟢 Vert Néon", lvl: 1 }, { id: "bleu", name: "🔵 Bleu Élect.", lvl: 5 },
+        { id: "rose", name: "🌸 Rose Cyber", lvl: 10 }, { id: "jaune", name: "🟡 Jaune Laser", lvl: 15 },
+        { id: "rouge", name: "🔥 Rouge Volcan", lvl: 20 }, { id: "violet", name: "💜 Violet Plasma", lvl: 25 }
+    ];
+    select.innerHTML = themeList.map(t => {
+        let isLocked = currentLvl < t.lvl;
+        return `<option value="${t.id}" ${isLocked ? 'disabled' : ''}>${t.name} ${isLocked ? `(🔒 Lvl ${t.lvl})` : ''}</option>`;
+    }).join('');
+    select.value = savedTheme; applyTheme(savedTheme);
+}
+
+function saveTheme() { const select = document.getElementById('theme-select'); if(select) { localStorage.setItem('ems_theme', select.value); applyTheme(select.value); } }
+
+function playSound(type) {
+    if (isExamMode) return; 
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.connect(gain); gain.connect(ctx.destination);
+        if (type === 'correct') {
+            osc.frequency.setValueAtTime(587.33, ctx.currentTime); osc.frequency.setValueAtTime(880, ctx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.08, ctx.currentTime); osc.start(); osc.stop(ctx.currentTime + 0.25);
+        } else if (type === 'wrong') {
+            osc.frequency.setValueAtTime(220, ctx.currentTime); osc.frequency.linearRampToValueAtTime(110, ctx.currentTime + 0.3);
+            gain.gain.setValueAtTime(0.12, ctx.currentTime); osc.start(); osc.stop(ctx.currentTime + 0.3);
+        } else if (type === 'levelup') {
+            let notes = [261.63, 329.63, 392.00, 523.25];
+            notes.forEach((freq, index) => {
+                let oscL = ctx.createOscillator(); oscL.connect(gain); oscL.frequency.setValueAtTime(freq, ctx.currentTime + (index * 0.1));
+                gain.gain.setValueAtTime(0.08, ctx.currentTime + (index * 0.1)); oscL.start(ctx.currentTime + (index * 0.1)); oscL.stop(ctx.currentTime + (index * 0.1) + 0.2);
+            });
+        }
+    } catch(e) {}
 }
 
 function triggerConfetti() {
-    for (let i = 0; i < 40; i++) {
-        const confetti = document.createElement('div');
-        confetti.className = 'confetti';
-        confetti.style.left = Math.random() * 100 + 'vw';
-        confetti.style.backgroundColor = ['#F58634', '#52B788', '#1C3D5A', '#FFD166'][Math.floor(Math.random() * 4)];
-        confetti.style.transform = `scale(${Math.random() * 0.8 + 0.5})`;
-        confetti.style.animationDelay = Math.random() * 1.2 + 's';
-        document.body.appendChild(confetti);
-        setTimeout(() => confetti.remove(), 4000);
+    if (typeof confetti === 'function') {
+        confetti({ particleCount: 25, spread: 35, origin: { y: 0.85 } });
+    }
+}
+function triggerEndConfetti() {
+    if (typeof confetti === 'function') {
+        confetti({ particleCount: 100, spread: 60, origin: { y: 0.6 } });
     }
 }
 
-// --- CARNET DE RÉVISIONS ---
-function registerError(fruitObj) {
-    if (!errorHistory.some(f => f.en === fruitObj.en)) {
-        errorHistory.push(fruitObj);
-        localStorage.setItem('oe_error_history_anim', JSON.stringify(errorHistory));
+// CORRECTION RECONSTRUCTION PHRASE POUR RELEVER LE DEFI DU MODE DICTEE/INTERROGATIF
+function getReconstructedSentence(q) { 
+    if (/\.\.\..*?\(.*?\)/.test(q.text)) {
+        return q.text.replace(/\.\.\..*?\(.*?\)/, q.answer);
+    }
+    return q.text.replace(/\.\.\./, q.answer);
+}
+
+function listenSentence() {
+    if (!currentQuestions[qIndex]) return;
+    try {
+        let isDict = (document.getElementById('mode-select').value === 'dictation');
+        let textToSpeak = isDict ? getReconstructedSentence(currentQuestions[qIndex]) : currentQuestions[qIndex].text.replace(/\.\.\./g, " blank ").replace(/\([^)]*\)/g, "");
+        let msg = new SpeechSynthesisUtterance(textToSpeak); msg.lang = 'en-US'; window.speechSynthesis.speak(msg);
+    } catch(e) {}
+}
+
+function normalize(str) { return str.toLowerCase().trim().replace(/’/g, "'").replace(/\bdoes not\b/g, "doesn't").replace(/\bdo not\b/g, "don't"); }
+function cleanPunctuation(str) { return str.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g,"").replace(/\s{2,}/g," "); }
+
+function getErrorMarkup(userInput, correctAnswer) {
+    let html = `<div>Saisie : `;
+    for(let i=0; i < userInput.length; i++) {
+        if(correctAnswer[i] && userInput[i].toLowerCase() === correctAnswer[i].toLowerCase()) { html += `<span style="color:white">${userInput[i]}</span>`; }
+        else { html += `<del>${userInput.substr(i)}</del>`; break; }
+    }
+    html += ` ➔ Attendu : <ins>${correctAnswer}</ins></div>`; return html;
+}
+
+function calculateCurrentLevel() {
+    let completedModes = getSafeLocalStorage('ems_completed_modes', []);
+    if (completedModes.length < 6) return 1; 
+    return Math.min(30, Math.floor(totalXp / 500) + 1);
+}
+
+function triggerLevelUp(lvl) {
+    playSound('levelup'); let card = document.getElementById('main-card'); if(card) card.classList.add('level-up-flash');
+    triggerConfetti();
+    let fb = document.getElementById('feedback'); if(fb) fb.innerHTML = `<h2 style="color:gold; animation:shake 0.5s; font-family:'Orbitron';">⭐ LEVEL UP ! NIVEAU ${lvl} ⭐</h2>`;
+    setTimeout(() => { if(card) card.classList.remove('level-up-flash'); }, 1500);
+}
+
+function updateMenuStateAndColors() {
+    let completedModes = getSafeLocalStorage('ems_completed_modes', []);
+    const selectElem = document.getElementById('mode-select'); if (!selectElem) return;
+    for (let i = 0; i < selectElem.options.length; i++) {
+        let opt = selectElem.options[i]; let val = opt.value;
+        if (val === 'revenge' || val === 'duel') { opt.style.color = (val === 'revenge' && errorBook.length > 0) ? "#FF4D4D" : "#888888"; continue; }
+        if (completedModes.includes(val)) { opt.style.color = "#00FF85"; opt.text = `${menuBaseTexts[val]} (10 Qs) 🟢`; }
+        else { opt.style.color = "#FF4D4D"; opt.text = `${menuBaseTexts[val]} (10 Qs) 🔴`; }
     }
 }
-function removeError(englishName) {
-    errorHistory = errorHistory.filter(f => f.en !== englishName);
-    localStorage.setItem('oe_error_history_anim', JSON.stringify(errorHistory));
-}
 
-// --- GESTION DE LA PROGRESSION ---
-function getUserPlayerLevel() {
-    return Math.floor(totalPoints / 150) + 1;
+function syncAvatarDropdown() {
+    const select = document.getElementById('avatar-select'); if(!select) return;
+    let currentLvl = calculateCurrentLevel(); let savedAv = localStorage.getItem('ems_selected_avatar') || "👤";
+    select.innerHTML = avatarList.map((av, idx) => {
+        let requiredLvl = idx * 3 + 1; let isLocked = currentLvl < requiredLvl;
+        return `<option value="${av}" ${isLocked ? 'disabled' : ''}>${av} ${isLocked ? `(🔒 Lvl ${requiredLvl})` : ''}</option>`;
+    }).join('');
+    select.value = savedAv;
 }
+function saveAvatar() { const select = document.getElementById('avatar-select'); if(select) localStorage.setItem('ems_selected_avatar', select.value); }
 
-// --- ADAPTATION DES TITRES (Zoologie) ---
-function updateLevelAndTitle() {
-    const pLevel = getUserPlayerLevel();
-    const levelEl = document.getElementById('user-level');
-    const titleEl = document.getElementById('user-title');
+function getAdaptiveQuestion(pool) {
+    if (pool.length === 0) return null;
+    let hardPattern = /doesn't|don't|es|ies/;
+    let filtered = [];
     
-    if (levelEl) levelEl.innerText = pLevel;
-
-    let title = "Novice de la Faune";
-    if (pLevel >= 3) title = "Dresseur / Tamer";
-    if (pLevel >= 6) title = "Ranger Émérite";
-    if (pLevel >= 9) title = "Aventurier Légendaire";
-    if (pLevel >= 12) title = "Dieu de la Nature 🐾";
-
-    if (titleEl) titleEl.innerText = title;
-    if (typeof updateLevelLockUI === 'function') updateLevelLockUI();
-
-// --- MODULE DARK MODE (AJOUTÉ) ---
-function toggleDarkMode() {
-    const isDark = document.documentElement.classList.toggle('dark');
-    localStorage.setItem('oe_dark_mode', isDark);
-    const icon = document.getElementById('theme-icon');
-    if (icon) {
-        icon.className = isDark ? "fa-solid fa-sun text-yellow-300" : "fa-solid fa-moon text-yellow-300";
+    if (combo >= 3 && !isExamMode) {
+        filtered = pool.filter(q => hardPattern.test(normalize(q.answer)));
+    } else if (combo === 0 && !isExamMode) {
+        filtered = pool.filter(q => !hardPattern.test(normalize(q.answer)) && !normalize(q.answer).endsWith('s'));
     }
-}
-
-// --- RÉINITIALISATION DES STATISTIQUES (AJOUTÉ) ---
-function resetStats() {
-    if (confirm("Êtes-vous sûr de vouloir réinitialiser toutes vos statistiques et votre progression Faune ?")) {
-        const keysToRemove = ['oe_total_points_anim', 'oe_high_quiz_anim', 'oe_high_speak_anim', 'oe_high_timeattack_anim', 'oe_max_streak_anim', 'oe_fav_anim', 'oe_error_history_anim', 'oe_unlocked_badges_anim'];
-        keysToRemove.forEach(key => localStorage.removeItem(key));
-        totalPoints = 0; highScores = { quiz: 0, speak: 0, timeattack: 0 }; maxStreak = 0; currentStreak = 0; errorHistory = []; unlockedBadges = []; favoriteFruits = [];
-        document.getElementById('total-points').innerText = totalPoints;
-        document.getElementById('streak-count').innerText = currentStreak;
-        document.getElementById('stat-high-quiz').innerText = 0;
-        document.getElementById('stat-high-speak').innerText = 0;
-        document.getElementById('stat-high-timeattack').innerText = 0;
-        document.getElementById('stat-max-streak').innerText = 0;
-        updateLevelAndTitle();
-        if (typeof renderDict === 'function') renderDict();
-        if (typeof updateFlashcard === 'function') updateFlashcard();
-        if (typeof renderBadgesUI === 'function') renderBadgesUI();
-        if (typeof renderErrorHistory === 'function') renderErrorHistory();
-        alert("Statistiques Faune réinitialisées !");
-    }
-}
-
-// --- PERSISTENCE ---
-function saveStats() {
-    localStorage.setItem('oe_total_points_anim', totalPoints);
-    localStorage.setItem('oe_high_quiz_anim', highScores.quiz);
-    localStorage.setItem('oe_high_speak_anim', highScores.speak); 
-    localStorage.setItem('oe_high_timeattack_anim', highScores.timeattack);
-    localStorage.setItem('oe_max_streak_anim', maxStreak);
-}
-function loadStats() {
-    totalPoints = parseInt(localStorage.getItem('oe_total_points_anim')) || 0;
-    highScores.quiz = parseInt(localStorage.getItem('oe_high_quiz_anim')) || 0;
-    highScores.speak = parseInt(localStorage.getItem('oe_high_speak_anim')) || 0; 
-    highScores.timeattack = parseInt(localStorage.getItem('oe_high_timeattack_anim')) || 0;
-    maxStreak = parseInt(localStorage.getItem('oe_max_streak_anim')) || 0;
-    favoriteFruits = JSON.parse(localStorage.getItem('oe_fav_anim')) || [];
-    errorHistory = JSON.parse(localStorage.getItem('oe_error_history_anim')) || [];
-    unlockedBadges = JSON.parse(localStorage.getItem('oe_unlocked_badges_anim')) || [];
     
-    if (localStorage.getItem('oe_dark_mode') === 'true') {
-        document.documentElement.classList.add('dark');
-        const icon = document.getElementById('theme-icon');
-        if (icon) icon.className = "fa-solid fa-sun text-yellow-300";
+    let selectionList = (filtered.length > 0) ? filtered : pool;
+    let randomIdx = Math.floor(Math.random() * selectionList.length);
+    let selectedQ = selectionList[randomIdx];
+    
+    let indexInPool = pool.indexOf(selectedQ);
+    if (indexInPool > -1) pool.splice(indexInPool, 1);
+    
+    return selectedQ;
+}
+
+function displaySentenceWithHints(q, isDictMode) {
+    let sentElem = document.getElementById('sentence'); if (!sentElem) return;
+    document.getElementById('vocab-hint-bar').innerText = ""; 
+    
+    if (isDictMode || isExamMode) {
+        sentElem.innerText = isDictMode ? "🎧 Écoutez attentivement et écrivez la phrase complète !" : q.text;
+        return;
     }
-    const totalPointsEl = document.getElementById('total-points');
-    if (totalPointsEl) totalPointsEl.innerText = totalPoints;
-    updateLevelAndTitle();
+
+    let words = q.text.split(" ");
+    sentElem.innerHTML = ""; 
+    
+    words.forEach(w => {
+        let cleanWord = w.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g,"");
+        if (vocabTranslations[cleanWord]) {
+            let span = document.createElement("span");
+            span.className = "hint-word";
+            span.innerText = w + " ";
+            span.addEventListener("mouseenter", () => showVocabHint(vocabTranslations[cleanWord]));
+            span.addEventListener("click", () => showVocabHint(vocabTranslations[cleanWord]));
+            sentElem.appendChild(span);
+        } else {
+            sentElem.appendChild(document.createTextNode(w + " "));
+        }
+    });
+}
+function showVocabHint(translation) { document.getElementById('vocab-hint-bar').innerText = `💡 Traduction : ${translation}`; }
+
+function resetGame() {
+    if (nextQuestionTimeout) clearTimeout(nextQuestionTimeout); 
+    clearInterval(timerInterval); clearInterval(panicTimer);
+    
+    let gz = document.getElementById('game-zone'); if(gz) gz.innerHTML = initialGameZoneHtml;
+    qIndex = 0; currentScore = 0; combo = 0; duelChallengerInfo = null;
+    
+    const modeSelect = document.getElementById('mode-select'); const mode = modeSelect ? modeSelect.value : 'affirmative';
+    const isPanicActive = document.getElementById('panic-toggle') ? document.getElementById('panic-toggle').checked : false;
+    isQcmMode = (mode === 'qcm'); // DECLARATION EXPLICITE APPLIQUEE GLOBALEMENT
+
+    let pool = [];
+    if (mode === 'duel') {
+        let code = prompt("⚔️ Collez le Code de Défi envoyé par votre camarade :");
+        if (!code) { modeSelect.value = "affirmative"; resetGame(); return; }
+        try {
+            let decoded = JSON.parse(decodeURIComponent(escape(atob(code)))); duelChallengerInfo = decoded;
+            pool = [].concat(...Object.values(questionsData)).filter(q => decoded.qTexts.includes(q.text));
+        } catch(e) { alert("Code de défi corrompu."); modeSelect.value = "affirmative"; resetGame(); return; }
+    } else if (mode === 'revenge') {
+        pool = [...errorBook]; if(pool.length === 0) { gz.innerHTML = `<p style='padding:20px; font-weight:bold;'>Your notebook is clean !</p>`; updateProfileUI(); return; }
+    } else if (mode === 'random' || mode === 'qcm' || mode === 'dictation') {
+        pool = [].concat(...Object.values(questionsData));
+    } else if (mode === 'daily') {
+        pool = [].concat(...Object.values(questionsData)).sort(() => (new Date().getDate() % 3) - 1.5);
+    } else { pool = [...(questionsData[mode] || [])]; }
+
+    roundPool = [...pool];
+    currentQuestions = [];
+    
+    updateProfileUI(); if (!isPanicActive) startNormalTimer();
+    loadQuestion();
+}
+
+function startNormalTimer() {
+    startTime = Date.now();
+    timerInterval = setInterval(() => {
+        let elapsed = Math.floor((Date.now() - startTime) / 1000);
+        let mins = Math.floor(elapsed / 60).toString().padStart(2, '0'); let secs = (elapsed % 60).toString().padStart(2, '0');
+        let timerDisp = document.getElementById('timer'); if(timerDisp) timerDisp.innerText = `${mins}:${secs}`;
+    }, 1000);
+}
+
+function startPanicCountdown() {
+    clearInterval(panicTimer); panicTimeLeft = 8;
+    const timerDisplay = document.getElementById('timer'); const pBar = document.getElementById('progress');
+    if(timerDisplay) { timerDisplay.innerText = "00:08"; timerDisplay.classList.add('panic-text'); }
+    if(pBar) pBar.classList.add('panic');
+    panicTimer = setInterval(() => {
+        panicTimeLeft--; 
+        if(timerDisplay) timerDisplay.innerText = `00:${panicTimeLeft.toString().padStart(2, '0')}`; 
+        if(pBar) pBar.style.width = `${(panicTimeLeft / 8) * 100}%`;
+        if (panicTimeLeft <= 0) { clearInterval(panicTimer); handleCheck(""); }
+    }, 1000);
+}
+
+function generateQcmOptions(correctAnswer) {
+    let fakes = new Set(); fakes.add(correctAnswer);
+    if(correctAnswer.includes("doesn't")) {
+        fakes.add(correctAnswer.replace("doesn't", "don't")); fakes.add(correctAnswer.replace("doesn't", "not"));
+    } else if(correctAnswer.includes("don't")) {
+        fakes.add(correctAnswer.replace("don't", "doesn't")); fakes.add(correctAnswer.replace("don't", "not"));
+    } else if(correctAnswer.endsWith("s") || correctAnswer.endsWith("es")) {
+        fakes.add(correctAnswer.replace(/e?s$/, "")); fakes.add(correctAnswer + "ing");
+    } else if(correctAnswer === "does" || correctAnswer === "do") {
+        fakes.add("does"); fakes.add("do"); fakes.add("is"); fakes.add("are");
+    } else { fakes.add(correctAnswer + "s"); fakes.add("doesn't " + correctAnswer); }
+    while(fakes.size < 4) fakes.add("is " + correctAnswer);
+    return Array.from(fakes).sort(() => Math.random() - 0.5);
+}
+
+function loadQuestion() {
+    if (qIndex >= 10 || (qIndex > 0 && roundPool.length === 0 && !currentQuestions[qIndex])) { endGame(); return; }
+    
+    const isPanicActive = document.getElementById('panic-toggle') ? document.getElementById('panic-toggle').checked : false;
+    let pBar = document.getElementById('progress'); let timerDisp = document.getElementById('timer');
+    if(pBar) pBar.classList.remove('panic'); if(timerDisp) timerDisp.classList.remove('panic-text');
+    if (!isPanicActive && pBar) pBar.style.width = `${(qIndex / 10) * 100}%`;
+    else if(isPanicActive) startPanicCountdown();
+    
+    if (!currentQuestions[qIndex]) {
+        let matchedQ = getAdaptiveQuestion(roundPool);
+        if (!matchedQ) { endGame(); return; }
+        currentQuestions.push(matchedQ);
+    }
+
+    const q = currentQuestions[qIndex];
+    let curQElem = document.getElementById('current-q'); let fbElem = document.getElementById('feedback'); let comboElem = document.getElementById('combo-display');
+    if(curQElem) curQElem.innerText = qIndex + 1; if(fbElem) fbElem.innerHTML = "";
+    if(comboElem) comboElem.innerText = (combo > 2 && !isExamMode) ? `x${combo >= 5 ? 3 : 2} 🔥` : "";
+
+    const mode = document.getElementById('mode-select').value;
+    displaySentenceWithHints(q, mode === 'dictation');
+    if (mode === 'dictation') setTimeout(listenSentence, 400);
+
+    const intZone = document.getElementById('interaction-zone'); if(!intZone) return;
+
+    if (isQcmMode) {
+        let options = generateQcmOptions(q.answer); intZone.innerHTML = `<div class="options-grid"></div>`;
+        let grid = intZone.querySelector('.options-grid');
+        options.forEach(opt => { 
+            let btn = document.createElement('button'); btn.innerText = opt;
+            btn.addEventListener('click', () => handleCheck(opt)); grid.appendChild(btn);
+        });
+    } else {
+        intZone.innerHTML = `
+            <input type="text" id="answer-input" placeholder="${mode==='dictation'?'Écrivez toute la phrase...':'Réponse...'}" autocomplete="off">
+            <button class="btn-main" id="btn-validate-text">Vérifier <i class="fas fa-bolt"></i></button>
+        `;
+        let inputField = document.getElementById('answer-input'); let valBtn = document.getElementById('btn-validate-text');
+        if(valBtn) valBtn.addEventListener('click', () => handleCheck());
+        if(inputField) { inputField.focus(); inputField.addEventListener("keypress", (e) => { if(e.key === "Enter") handleCheck(); }); }
+    }
+}
+
+function handleCheck(qcmValue = null) {
+    clearInterval(panicTimer); if (!currentQuestions[qIndex]) return;
+    const q = currentQuestions[qIndex]; const fb = document.getElementById('feedback');
+    const inputField = document.getElementById('answer-input');
+    const rawInput = qcmValue !== null ? qcmValue : (inputField ? inputField.value : "");
+    const mode = document.getElementById('mode-select').value;
+    
+    let cleanInput = normalize(rawInput); let cleanAnswer = normalize(q.answer);
+    if (mode === 'dictation') { cleanInput = cleanPunctuation(normalize(rawInput)); cleanAnswer = cleanPunctuation(normalize(getReconstructedSentence(q))); }
+    const oldLvl = calculateCurrentLevel();
+
+    if (cleanInput === cleanAnswer) {
+        combo++; currentScore++; let mult = (combo >= 5) ? 3 : (combo >= 3) ? 2 : 1; if (isExamMode) mult = 1; totalXp += (10 * mult);
+        if(!isExamMode && fb) { 
+            fb.innerHTML = `<span style="color:var(--primary); font-weight:bold;">🔥 CORRECT ! ${mult > 1 ? '(COMBO x'+mult+')' : '(+10 XP)'}</span>`; 
+            playSound('correct'); 
+            triggerConfetti();
+        }
+        errorBook = errorBook.filter(item => item.text !== q.text);
+    } else {
+        combo = 0; let catKey = (mode === 'random' || mode === 'qcm' || mode === 'daily' || mode === 'dictation') ? 'affirmative' : mode;
+        if(mistakesByCat[catKey] !== undefined) mistakesByCat[catKey]++;
+        if(normalize(q.answer).endsWith('s') && !normalize(rawInput).endsWith('s')) mistakesByCat.s_errors++;
+        if(!isExamMode && fb) {
+            let targetAnswer = (mode === 'dictation') ? getReconstructedSentence(q) : q.answer;
+            let errorMarkup = isQcmMode ? `Sélection : <span style="color:var(--error)">${rawInput || "Temps expiré"}</span> ➔ Attendu : <b style="color:var(--primary)">${q.answer}</b>` : getErrorMarkup(rawInput, targetAnswer);
+            fb.innerHTML = `<div class="error-highlight">${errorMarkup}</div><div style="color:#aaa; font-size:13px; margin-top:4px;">💡 ${q.rule}</div>`;
+            playSound('wrong'); let mainCard = document.querySelector('.container'); if(mainCard) { mainCard.style.animation = "shake 0.4s"; setTimeout(() => mainCard.style.animation = "", 400); }
+        } else if(fb) fb.innerHTML = `<span style="color:var(--secondary)">Réponse enregistrée.</span>`;
+        if (!errorBook.some(item => item.text === q.text)) { errorBook.push(q); }
+    }
+    localStorage.setItem('ems_xp', totalXp); localStorage.setItem('ems_errors', JSON.stringify(errorBook)); localStorage.setItem('ems_mistakes_cat', JSON.stringify(mistakesByCat));
+    const newLvl = calculateCurrentLevel(); if(newLvl > oldLvl && !isExamMode) setTimeout(() => { triggerLevelUp(newLvl); }, 400);
+    updateProfileUI(); qIndex++; 
+    
+    nextQuestionTimeout = setTimeout(loadQuestion, isExamMode ? 600 : (cleanInput === cleanAnswer ? 1200 : 4500));
+}
+
+function updateProfileUI() {
+    let currentLvl = calculateCurrentLevel(); let completedModes = getSafeLocalStorage('ems_completed_modes', []);
+    let xpInCurrentLvl = totalXp % 500; let currentStreak = localStorage.getItem('ems_streak') || 0;
+    let lvlElem = document.getElementById('player-lvl'); if(lvlElem) lvlElem.innerText = `LVL ${currentLvl}`;
+    let streakElem = document.getElementById('streak-display'); if(streakElem) streakElem.innerText = `${currentStreak} 🔥`;
+    const xpTextElem = document.getElementById('player-xp-text');
+    if (xpTextElem) {
+        if (completedModes.length < 6) { xpTextElem.innerText = `${totalXp} XP (Bloqué Lvl 1 : Fais ${6 - completedModes.length} catégories 🔴)`; xpTextElem.style.color = "var(--error)"; }
+        else { xpTextElem.innerText = currentLvl === 30 ? `${totalXp} XP (MAX)` : `${xpInCurrentLvl} / 500 XP`; xpTextElem.style.color = "var(--primary)"; }
+    }
+    syncAvatarDropdown(); syncThemeDropdown(); updateMenuStateAndColors(); renderBadgesAndLeaderboard();
+}
+
+function renderBadgesAndLeaderboard() {
+    let currentLvl = calculateCurrentLevel(); let totalUnlockedBadges = 0;
+    for (let l = 1; l <= 30; l++) { if (currentLvl >= l) totalUnlockedBadges++; if (currentLvl >= l && perfectStreaks >= l) totalUnlockedBadges++; if (currentLvl >= l && gamesPlayed >= l * 2) totalUnlockedBadges++; }
+    const bZone = document.getElementById('badges');
+    if(bZone) bZone.innerHTML = `<div style="width:100%; margin-bottom:5px; font-weight:bold; color:var(--primary); font-family:'Orbitron'; font-size:0.85rem;">Trophées débloqués : ${totalUnlockedBadges} / 90</div><span class="badge-item unlocked">Subis: Lvl ${currentLvl} 🥉</span><span class="badge-item ${perfectStreaks >= currentLvl ? 'unlocked' : ''}">Sniper (${perfectStreaks}/${currentLvl}) 🥈</span><span class="badge-item ${gamesPlayed >= currentLvl * 2 ? 'unlocked' : ''}">Vétéran (${gamesPlayed}/${currentLvl * 2}) 🥇</span>`;
+    let highscores = getSafeLocalStorage('ems_lb', []); const lbZone = document.getElementById('leaderboard');
+    if(lbZone) lbZone.innerHTML = highscores.slice(0, 10).map((s, idx) => `<li><span>#${idx+1} ${s.mode}</span><b style="color:var(--primary)">${s.score}/10 (${s.time})</b></li>`).join('') || `<li><span style="opacity:0.5">Aucun record enregistré.</span></li>`;
+}
+
+function renderStats() {
+    const container = document.getElementById('stats-container'); if (!container) return;
+    let diag = (mistakesByCat.s_errors > 5) ? "⚠️ Règle des 3e personnes (-s / -es) non assimilée. Rappelle-toi : He/She/It prennent un -s !" : (mistakesByCat.negative > 5) ? "⚠️ Difficultés sur les négations. Révise l'utilisation de 'don't' et 'doesn't'." : (gamesPlayed === 0) ? "Aucun historique disponible. Termine d'abord un exercice !" : "✅ Excellent profil d'apprentissage. Compétences homogènes.";
+    
+    container.innerHTML = `
+        <div class="rule-card" style="border-color:var(--accent); margin-top:10px;"><h3>🩺 Diagnostic Pédagogique (Prof)</h3><p>${diag}</p></div>
+        <div class="stat-line"><span>Erreurs - Formes Affirmatives</span><span style="color:var(--error)">${mistakesByCat.affirmative}</span></div>
+        <div class="stat-line"><span>Erreurs - Formes Négatives</span><span style="color:var(--error)">${mistakesByCat.negative}</span></div>
+        <div class="stat-line"><span>Erreurs - Formes Interrogatives</span><span style="color:var(--error)">${mistakesByCat.interrogative}</span></div>
+        <div class="stat-line"><span>Oublis du '-s' à la 3e personne</span><span style="color:var(--accent)">${mistakesByCat.s_errors}</span></div>
+        <div class="stat-line"><span>Total de séries terminées</span><span style="color:var(--secondary)">${gamesPlayed}</span></div>
+    `;
+}
+
+function copyScoreToClipboard(textToCopy) { navigator.clipboard.writeText(textToCopy).then(() => { alert("Code copié !"); }); }
+function checkDailyStreak() { let today = new Date().toDateString(); let lastPlayed = localStorage.getItem('ems_last_played'); let streak = parseInt(localStorage.getItem('ems_streak')) || 0; if (lastPlayed) { if (lastPlayed === today) return; let yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1); if (lastPlayed === yesterday.toDateString()) streak++; else streak = 1; } else { streak = 1; } localStorage.setItem('ems_streak', streak); localStorage.setItem('ems_last_played', today); }
+function exportSave() { let keys = ['ems_xp', 'ems_errors', 'ems_games', 'ems_perfect', 'ems_mistakes_cat', 'ems_completed_modes', 'ems_streak', 'ems_last_played', 'ems_theme', 'ems_selected_avatar', 'ems_lb']; let data = {}; keys.forEach(k => { data[k] = localStorage.getItem(k); }); let base64Code = btoa(unescape(encodeURIComponent(JSON.stringify(data)))); prompt("Copiez ce code de sauvegarde Cloud :", base64Code); }
+
+function importSave() { 
+    let code = prompt("Collez votre code de sauvegarde Cloud ci-dessous :"); 
+    if (!code) return; 
+    try { 
+        let jsonStr = decodeURIComponent(escape(atob(code))); 
+        let data = JSON.parse(jsonStr); 
+        Object.keys(data).forEach(k => { 
+            if (data[k] !== null && data[k] !== undefined) localStorage.setItem(k, data[k]); 
+        }); 
+        alert("Sauvegarde Cloud chargée !"); 
+        location.reload(); 
+    } catch(e) { 
+        alert("Code de sauvegarde invalide."); 
+    } 
+}
+
+function resetAllStats() { 
+    if(confirm("Effacer TOUTES les statistiques ? Cette action est irréversible.")) { 
+        let keys = ['ems_xp', 'ems_errors', 'ems_games', 'ems_perfect', 'ems_mistakes_cat', 'ems_completed_modes', 'ems_streak', 'ems_last_played', 'ems_theme', 'ems_selected_avatar', 'ems_lb']; 
+        keys.forEach(k => localStorage.removeItem(k)); 
+        alert("Réinitialisation réussie !"); 
+        location.reload(); 
+    } 
+}
+
+function endGame() {
+    if (nextQuestionTimeout) clearTimeout(nextQuestionTimeout);
+    clearInterval(timerInterval); clearInterval(panicTimer);
+    let pBar = document.getElementById('progress'); if(pBar) pBar.style.width = "100%";
+    let timerDisp = document.getElementById('timer'); const finalTime = timerDisp ? timerDisp.innerText : "00:00";
+    const selectElem = document.getElementById('mode-select'); const mode = selectElem ? selectElem.value : 'affirmative';
+    let modeName = selectElem ? selectElem.options[selectElem.selectedIndex].text.split('(')[0].trim() : 'Exercice';
+    const isPanicActive = document.getElementById('panic-toggle') ? document.getElementById('panic-toggle').checked : false;
+    
+    gamesPlayed++; localStorage.setItem('ems_games', gamesPlayed);
+    if (currentScore === 10) { 
+        perfectStreaks++; localStorage.setItem('ems_perfect', perfectStreaks); 
+        if(!isExamMode) triggerEndConfetti();
+    }
+
+    const oldLvl = calculateCurrentLevel();
+    if (mode !== 'revenge' && mode !== 'duel') {
+        let done = getSafeLocalStorage('ems_completed_modes', []);
+        if (!done.includes(mode)) { done.push(mode); localStorage.setItem('ems_completed_modes', JSON.stringify(done)); }
+    }
+
+    checkDailyStreak();
+    let highscores = getSafeLocalStorage('ems_lb', []);
+    highscores.push({ mode: modeName + (isPanicActive ? " 🚨" : ""), score: currentScore, time: finalTime, timestamp: Date.now() });
+    highscores.sort((a, b) => b.score - a.score || a.time.localeCompare(b.time)); localStorage.setItem('ems_lb', JSON.stringify(highscores));
+
+    const newLvl = calculateCurrentLevel(); if(newLvl > oldLvl && !isExamMode) setTimeout(() => { triggerLevelUp(newLvl); }, 400);
+    
+    let diagMsg = mistakesByCat.s_errors > 5 ? "Faiblesse:-s_form" : mistakesByCat.negative > 3 ? "Faiblesse:Auxiliaires" : "Homogène";
+    let shareText = `[PRESENT SIMPLE MASTERY] EXAM:${isExamMode?'OUI':'NON'} | Élève Lvl:${newLvl} | Catégorie: ${modeName} | Note: ${currentScore}/10 | Chrono: ${finalTime} | Profil:${diagMsg} | Verification: PS-${totalXp}X`;
+    
+    let duelCode = btoa(unescape(encodeURIComponent(JSON.stringify({ challenger: localStorage.getItem('ems_selected_avatar') || "👤", score: currentScore, time: finalTime, qTexts: currentQuestions.map(q => q.text) }))));
+
+    let gz = document.getElementById('game-zone');
+    if(gz) {
+        let endHtml = ``;
+        if (mode === 'duel' && duelChallengerInfo) {
+            let isWinner = (currentScore > duelChallengerInfo.score) || (currentScore === duelChallengerInfo.score && finalTime <= duelChallengerInfo.time);
+            endHtml += `<h2 style="color:${isWinner?'var(--primary)':'var(--error)'}; font-family:'Orbitron'; margin-top:20px;">⚔️ ${isWinner ? 'DUEL REMPORTÉ ! 🎉' : 'DEFAITE EN DUEL 💀'}</h2>
+                        <p style="font-size:1.15rem;">Vous : <b>${currentScore}/10</b> (${finalTime})</p>
+                        <p style="font-size:1.15rem; color:#888;">Adversaire ${duelChallengerInfo.challenger} : <b>${duelChallengerInfo.score}/10</b> (${duelChallengerInfo.time})</p>`;
+        } else {
+            endHtml += `<h2 style="color:var(--primary); font-family:'Orbitron'; margin-top:20px;">🎮 ${isExamMode ? 'EXAMEN SÉCURISÉ' : 'CHALLENGE'} TERMINÉ !</h2>
+                        <p style="font-size:1.2rem;">Score obtenu : <b style="color:var(--primary)">${currentScore} / 10</b></p>
+                        <p>Temps enregistré : <b style="color:var(--secondary)">${finalTime}</b></p>`;
+        }
+        
+        endHtml += `<button class="btn-main" id="btn-restart-game">LANCER UN AUTRE DÉFI</button>
+                    <button class="btn-main btn-share" style="background:#1c1a24; border-color:var(--accent); color:var(--accent);" onclick="copyScoreToClipboard('${duelCode}')"><i class="fas fa-hand-fist"></i> GENERER UN CODE DE DUEL (Ami)</button>
+                    <button class="btn-main btn-share" onclick="copyScoreToClipboard('${shareText}')"><i class="fas fa-copy"></i> COPIER LE RAPPORT ENSEIGNANT</button>`;
+        
+        gz.innerHTML = endHtml;
+        let rBtn = document.getElementById('btn-restart-game'); if(rBtn) rBtn.addEventListener('click', () => resetGame());
+    }
+    updateProfileUI();
+}
+
+// Remplacez le simple "resetGame();" tout en bas de script.js par ceci :
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', resetGame);
+} else {
+    resetGame();
 }
