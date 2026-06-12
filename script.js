@@ -4,6 +4,7 @@ let timerInterval, startTime, panicTimer, panicTimeLeft, combo = 0;
 let duelChallengerInfo = null; 
 let roundPool = []; // Pool de secours global pour le suivi adaptatif phrase par phrase
 let nextQuestionTimeout = null; // Protège contre les collisions de menus déroulants
+let isQcmMode = false; // <-- À ajouter ici
 
 let isMuted = localStorage.getItem('ems_muted') === 'true'; // Variable globale de sourdine
 let sessionXpEarned = 0; // Calcul de l'XP de la partie courante
@@ -149,7 +150,21 @@ function triggerEndConfetti() {
     }
 }
 
-function getReconstructedSentence(q) { return q.text.replace(/\.\.\.\s*(?:\([^)]*\))?/, q.answer); }
+function getReconstructedSentence(q) {
+    if (q.text.includes(')')) {
+        const partsBefore = q.text.split('...');
+        const partAfterParenthesis = q.text.substring(q.text.indexOf(')') + 1);
+        
+        // Si la phrase commence par les pointillés (Forme Interrogative)
+        if (q.text.startsWith('...')) {
+            return q.answer + partAfterParenthesis;
+        }
+        // Formes Affirmatives et Négatives
+        return partsBefore[0] + q.answer + partAfterParenthesis;
+    }
+    // Réponses brèves (ne contiennent pas de parenthèses)
+    return q.text.replace('...', q.answer);
+}
 
 function listenSentence() {
     if (!currentQuestions[qIndex]) return;
