@@ -1,0 +1,486 @@
+/* IMPORTATION D'UNE POLICE MODERNE ET DYNAMIQUE ACCESSIBLE EN PWA */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+:root {
+  /* Nouvelle palette Light : Épurée, contrastée avec touches Électriques */
+  --primary: #6366f1;       /* Indigo Électrique (Style Discord) */
+  --accent: #ff4757;        /* Corail Flashy */
+  --bg: #f8fafc;            /* Fond ultra-propre */
+  --card: #ffffff;          /* Conteneurs blancs */
+  --text: #475569;          
+  --text-dark: #0f172a;     /* Titres sombres très profonds */
+  --border: #e2e8f0;        
+  --nav-bg: #f1f5f9;        
+  --success: #10b981;       /* Vert émeraude */
+  --error: #ff4757;         
+  --radius-lg: 16px;        /* Coins très arrondis style iOS/Modern App */
+  --radius-md: 12px;
+  --radius-sm: 8px;
+  --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 10px 15px -3px rgba(99, 102, 241, 0.1), 0 4px 6px -4px rgba(99, 102, 241, 0.05);
+  --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* LE MODE DARK : Le mode préféré des ados (85%+ d'utilisation) */
+[data-theme="dark"] {
+  --primary: #818cf8;       /* Indigo adouci pour l'accessibilité */
+  --accent: #ff6b81;        
+  --bg: #090d16;            /* Noir d'espace profond (au lieu du gris) */
+  --card: #131a26;          /* Cartes bleutées foncées */
+  --text: #94a3b8;          
+  --text-dark: #f8fafc;     
+  --border: #1e293b;        
+  --nav-bg: #0f172a;        
+  --shadow-md: 0 10px 20px -3px rgba(0, 0, 0, 0.3);
+}
+
+* { 
+  margin: 0; 
+  padding: 0; 
+  box-sizing: border-box; 
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif !important;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 25px 12px;
+  line-height: 1.6;
+  transition: background 0.3s ease;
+}
+
+/* Le conteneur principal devient une interface flottante premium */
+.container {
+  max-width: 900px;
+  margin: auto;
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  transition: var(--transition);
+}
+
+/* ==========================================================================
+   HEADER GAMIFIÉ
+   ========================================================================== */
+header {
+  background: linear-gradient(135deg, var(--primary), #4f46e5);
+  color: #ffffff;
+  padding: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  border-bottom: none;
+  position: relative;
+}
+
+[data-theme="dark"] header {
+  background: linear-gradient(135deg, #1e1b4b, #0f172a);
+  border-bottom: 2px solid var(--border);
+}
+
+header h1 {
+  font-size: 1.9rem;
+  font-weight: 800; /* Style gras impactant */
+  letter-spacing: -0.8px;
+  color: #ffffff;
+}
+
+.subtitle {
+  font-size: 0.95rem;
+  opacity: 0.85;
+  font-weight: 500;
+}
+
+#themeToggle {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 1.1rem;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+#themeToggle:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.05);
+}
+
+/* Barre de recherche style Dashboard */
+.search-container {
+  padding: 20px 20px 0 20px;
+}
+
+#search {
+  width: 100%;
+  padding: 14px 18px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  color: var(--text-dark);
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+#search:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+  background: var(--card);
+}
+
+/* Navigation par onglets type Application Mobile */
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 15px 20px;
+  background: var(--nav-bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-btn {
+  padding: 10px 18px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.nav-btn:hover {
+  background: rgba(99, 102, 241, 0.08);
+  color: var(--primary);
+}
+
+nav button.active, .nav-btn.active {
+  background: var(--primary) !important;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+}
+
+/* ==========================================================================
+   COMPOSANTS DE JEU & LOGIQUE VISUELLE
+   ========================================================================== */
+.section { 
+  display: none; 
+  padding: 25px 20px; 
+  min-height: 480px; 
+}
+.section.active { 
+  display: block; 
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.section h2 {
+  font-size: 1.5rem;
+  color: var(--text-dark);
+  margin-bottom: 20px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+/* Fiches de verbes : Effet de relief épuré */
+.verb-card {
+  background: var(--bg);
+  padding: 16px 20px;
+  margin-bottom: 12px;
+  border-radius: var(--radius-md);
+  border-left: 5px solid var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+
+.verb-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.05);
+}
+
+.verb-card strong {
+  color: var(--text-dark);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+/* Boutons & Saisie */
+.btn-primary, .verb-card button, .quiz-container button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--primary);
+  color: white;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.15);
+  transition: var(--transition);
+}
+
+.btn-primary:hover, .verb-card button:hover {
+  background: #4f46e5;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(99, 102, 241, 0.25);
+}
+
+.verb-card button {
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  background: var(--card);
+  color: var(--primary);
+  border: 2px solid var(--border);
+  box-shadow: none;
+}
+.verb-card button:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+/* Flashcards Style "Duolingo/Anki" immersif */
+.card {
+  width: 100%;
+  max-width: 380px;
+  height: 250px;
+  margin: 25px auto;
+  perspective: 1000px;
+}
+.card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+}
+
+.front, .back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 25px;
+  border: 2px solid var(--border);
+}
+
+.front { 
+  background: linear-gradient(135deg, #4f46e5, var(--primary)); 
+  color: white; 
+}
+.front h2 { color: white; font-size: 2.2rem; font-weight: 800; margin-bottom: 8px; }
+.front p { font-size: 0.85rem; opacity: 0.75; font-weight: 500; }
+
+.back { 
+  background: var(--card); 
+  color: var(--text-dark); 
+  transform: rotateY(180deg);
+  border-color: var(--primary);
+}
+.back h2 { font-size: 1.8rem; font-weight: 800; margin-bottom: 8px; color: var(--primary); }
+.back p { font-size: 1.1rem; margin-bottom: 20px; font-weight: 500; color: var(--text); }
+
+/* Options du Quiz QCM */
+.option {
+  width: 100%;
+  margin: 10px 0;
+  padding: 16px;
+  font-size: 1.05rem;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--border);
+  background: var(--bg);
+  color: var(--text-dark);
+  cursor: pointer;
+  transition: var(--transition);
+  font-weight: 600;
+}
+.option:hover {
+  border-color: var(--primary);
+  background: var(--card);
+  transform: scale(1.01);
+}
+
+/* Zone de Matching Grille */
+.matching-board {
+  gap: 15px;
+}
+.matching-item {
+  background: var(--bg);
+  border: 2px solid var(--border);
+  padding: 16px;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  transition: var(--transition);
+}
+.matching-item:hover {
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+.matching-item.selected {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+}
+
+/* ==========================================================================
+   STATISTIQUES, BADGES & DESIGNS GAMIFIÉS
+   ========================================================================== */
+.progress-bar-container {
+  height: 14px;
+  background: var(--nav-bg);
+  border-radius: 30px;
+  border: none;
+  margin-bottom: 30px;
+}
+.progress-bar {
+  background: linear-gradient(90deg, var(--primary), #818cf8);
+  border-radius: 30px;
+}
+
+.stat-box {
+  background: var(--bg);
+  padding: 18px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+}
+.stat-box strong { font-size: 1.5rem; font-weight: 800; }
+
+/* Menus déroulants du Header (Speed & Level) */
+#difficultySelect, #speedSelect, #visualThemeSelect {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: white;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  transition: var(--transition);
+}
+#difficultySelect:hover, #speedSelect:hover, #visualThemeSelect:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* Cadres des Trophées/Badges */
+.badge-box {
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+.badge-box.unlocked {
+  background: rgba(16, 185, 129, 0.08);
+  border: 2px solid var(--success);
+}
+.badge-box.locked {
+  background: var(--nav-bg);
+  border: 2px dashed var(--border);
+}
+
+/* Saisie Hard Mode */
+.hard-mode-container input {
+  padding: 14px;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--border);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+.hard-mode-container input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+}
+
+/* ==========================================================================
+   LES SÉLECTEURS ADAPTATIFS DE STACKS ET LE LAYOUT
+   ========================================================================== */
+.selectors-stack select {
+  width: 185px;
+}
+
+/* Étoiles de maîtrise */
+.mastery-stars {
+  color: #f59e0b; /* Jaune ambré moderne */
+}
+
+/* Footer & Jauge d'XP Principale */
+footer {
+  padding: 22px;
+  background: var(--nav-bg);
+  border-top: 1px solid var(--border);
+  font-weight: 500;
+}
+.xp-progress-container {
+  height: 10px;
+  background: var(--border);
+  border-radius: 30px;
+}
+.xp-progress-bar {
+  background: linear-gradient(90deg, #3b82f6, #60a5fa); /* Dégradé XP brillant */
+  border-radius: 30px;
+}
+
+/* Quêtes journalières */
+.quests-container {
+  border-radius: var(--radius-md);
+}
+.quest-mini-bar-container {
+  height: 8px;
+  border-radius: 30px;
+}
+.quest-mini-bar {
+  border-radius: 30px;
+  background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+/* ==========================================================================
+   THEMES À DÉBLOQUER OPTIMISÉS
+   ========================================================================== */
+[data-visual-theme="cyberpunk"] {
+  --primary: #00f0ff;      /* Cyan électrique */
+  --accent: #ff007f;       /* Néon magenta */
+  --bg: #030712;
+  --card: #0b0f19;
+  --text: #94a3b8;
+  --text-dark: #00f0ff;
+  --border: #1e293b;
+  --nav-bg: #070a13;
+}
+[data-visual-theme="cyberpunk"] .btn-primary,
+[data-visual-theme="cyberpunk"] .nav-btn.active {
+  background: linear-gradient(135deg, #ff007f, #b5005b) !important;
+  box-shadow: 0 4px 15px rgba(255, 0, 127, 0.35);
+}
+
+[data-visual-theme="space"] {
+  --primary: #a855f7;      /* Violet nébuleuse */
+  --accent: #f472b6;       
+  --bg: #02000a;
+  --card: #0d0722;
+  --text: #94a3b8;
+  --text-dark: #f472b6;
+  --border: #2e1065;
+  --nav-bg: #080318;
+}
+[data-visual-theme="space"] .btn-primary,
+[data-visual-theme="space"] .nav-btn.active {
+  background: linear-gradient(135deg, #a855f7, #ec4899) !important;
+  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.35);
+}

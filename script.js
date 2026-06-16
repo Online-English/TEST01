@@ -1,699 +1,935 @@
-// script.js
-let currentScore = 0, qIndex = 0, currentQuestions = [], isExamMode = false;
-let timerInterval, startTime, panicTimer, panicTimeLeft, combo = 0;
-let duelChallengerInfo = null; 
-let roundPool = []; // Pool de secours global pour le suivi adaptatif phrase par phrase
-let nextQuestionTimeout = null; // Protège contre les collisions de menus déroulants
-let isQcmMode = false; // <-- À ajouter ici
+// ==========================================================================
+// VARIABLES D'ÉTAT GLOBALES
+// ==========================================================================
+let verbs = []; // Chargé dynamiquement depuis verbs.json
+let currentScore = parseInt(localStorage.getItem('verbScore')) || 0;
+let currentStreak = 0;
+let currentVerb = null;
+let bestStreak = parseInt(localStorage.getItem('bestStreak')) || 0;
 
-let isMuted = localStorage.getItem('ems_muted') === 'true'; // Variable globale de sourdine
-let sessionXpEarned = 0; // Calcul de l'XP de la partie courante
+let playerXp = parseInt(localStorage.getItem('playerXp')) || 0;
+let playerLevel = parseInt(localStorage.getItem('playerLevel')) || 1;
+let currentDifficulty = parseInt(localStorage.getItem('currentDifficulty')) || 20;
 
-const initialGameZoneHtml = document.getElementById('game-zone').innerHTML;
+let speechRate = 1.0;
+let isAutoplayFlashcard = false;
+let slideshowInterval = null;
+let isTimeAttack = false;
+let timeAttackTimer = null;
+let timeAttackSecondsLeft = 30;
+let timeAttackScore = 0;
+let quizTimeout = null;
 
-// Fonction utilitaire de chargement sécurisé contre les données locales corrompues ou obsolètes
-function getSafeLocalStorage(key, defaultVal) {
-    try {
-        const item = localStorage.getItem(key);
-        if (!item) return defaultVal;
-        const parsed = JSON.parse(item);
-        
-        // Garantie absolue de type pour éviter les blocages sur .slice() / .push() / .includes()
-        if (Array.isArray(defaultVal) && !Array.isArray(parsed)) return defaultVal;
-        if (typeof defaultVal === 'object' && defaultVal !== null && !Array.isArray(defaultVal) && (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed))) return defaultVal;
-        
-        return parsed;
-    } catch (e) {
-        console.warn("Données LocalStorage corrompues détectées pour la clé : " + key);
-        return defaultVal;
+let activeVisualTheme = localStorage.getItem('visualTheme') || 'classic';
+const difficultyLevels = [20, 40, 60, 80, 100, 120, 150, 200];
+
+// Variables pour les fonctionnalités avancées
+let currentCombo = 0;
+let isReviewMode = false;
+let isErrorReviewMode = false;
+let recentErrors = JSON.parse(localStorage.getItem('recentErrors')) || [];
+let dailyQuests = JSON.parse(localStorage.getItem('dailyQuests')) || [];
+let questDate = localStorage.getItem('questDate') || "";
+let dailyStreak = parseInt(localStorage.getItem('dailyStreak')) || 0;
+let lastActiveDate = localStorage.getItem('lastActiveDate') || "";
+let xpHistory = JSON.parse(localStorage.getItem('xpHistory')) || {};
+
+// ==========================================================================
+// CHARGEMENT DES DONNÉES & MOTEUR PROGRESSION
+// ==========================================================================
+async function loadVerbsFromJSON() {
+  try {
+    const response = await fetch('verbs.json');
+    verbs = await response.json();
+    
+    // Synchroniser avec les niveaux de maîtrise sauvegardés
+    const savedVerbs = localStorage.getItem('verbsData');
+    if (savedVerbs) {
+      const parsed = JSON.parse(savedVerbs);
+      parsed.forEach(sv => {
+        const v = verbs.find(v => v.base === sv.base);
+        if (v) v.mastery = sv.mastery;
+      });
     }
+  } catch (e) {
+    console.error("Erreur critique lors du chargement de verbs.json :", e);
+  }
 }
 
-// Chargement LocalStorage blindé
-let totalXp = parseInt(localStorage.getItem('ems_xp')) || 0;
-let errorBook = getSafeLocalStorage('ems_errors', []);
-let gamesPlayed = parseInt(localStorage.getItem('ems_games')) || 0;
-let perfectStreaks = parseInt(localStorage.getItem('ems_perfect')) || 0;
-let mistakesByCat = getSafeLocalStorage('ems_mistakes_cat', { affirmative: 0, negative: 0, interrogative: 0, short: 0, s_errors: 0 });
+// 2000 XP requis par palier de niveau pour ralentir la progression
+function getXpNeededForNextLevel(level) {
+  return level * 2000; 
+}
 
-const themes = {
-    "vert": { primary: "#00FF85", secondary: "#1E90FF", accent: "#FF007F" },
-    "bleu": { primary: "#1E90FF", secondary: "#00FF85", accent: "#FFD700" },
-    "rose": { primary: "#FF007F", secondary: "#1E90FF", accent: "#00FF85" },
-    "jaune": { primary: "#FFD700", secondary: "#FF007F", accent: "#1E90FF" },
-    "rouge": { primary: "#FF3B30", secondary: "#FFD700", accent: "#00FF85" },
-    "violet": { primary: "#A020F0", secondary: "#00FF85", accent: "#FF007F" }
-};
+// Algorithme de filtrage des pools de verbes
+function getFilteredVerbs() {
+  if (isErrorReviewMode) {
+    return verbs.filter(v => recentErrors.includes(v.base));
+  }
+  if (isReviewMode) {
+    return verbs.slice(0, currentDifficulty).filter(v => (v.mastery || 0) < 3);
+  }
+  return verbs.slice(0, currentDifficulty);
+}
 
-const avatarList = ["👤", "👟", "🎒", "🍪", "🎧", "🥷", "🎯", "🧙", "🚀", "🤖", "🐲", "👑"];
+// Système de Répétition Espacée (SRS) : 65% de chances de cibler les verbes faibles
+function pickSRSVerb(pool) {
+  if (!pool.length) return null;
+  if (Math.random() < 0.65) {
+    const sorted = [...pool].sort((a, b) => (a.mastery || 0) - (b.mastery || 0));
+    const worstHalf = sorted.slice(0, Math.max(1, Math.floor(sorted.length / 2)));
+    return worstHalf[Math.floor(Math.random() * worstHalf.length)];
+  }
+  return pool[Math.floor(Math.random() * pool.length)];
+}
 
-const menuBaseTexts = {
-    "affirmative": "Formes Affirmatives", "negative": "Formes Négatives", "interrogative": "Formes Interrogatives",
-    "short": "Réponses brèves", "qcm": "Mode QCM Mixte", "dictation": "🎧 Mode Dictée",
-    "daily": "📅 Le Défi du Jour", "random": "Tout mélangé", "revenge": "👿 Revenge Mode", "duel": "⚔️ Mode Défi",
-    "lab": "🧪 Morphology Lab"
-};
+// Système Duolingo de Série Quotidienne (Daily Streak)
+function checkDailyStreak() {
+  const today = new Date().toISOString().split('T')[0];
+  if (lastActiveDate) {
+    const lastDate = new Date(lastActiveDate);
+    const currentDate = new Date(today);
+    const diffDays = Math.ceil(Math.abs(currentDate - lastDate) / (1000 * 60 * 60 * 24));
+    if (diffDays > 1) dailyStreak = 0; // Jauge brisée si un jour est sauté
+  }
+  document.getElementById('streak').textContent = dailyStreak;
+}
 
-const vocabTranslations = {
-    "football": "ballon de football ⚽", "video games": "jeux vidéo 🎮", "movies": "films 🎬",
-    "gym": "salle de sport 🏋️", "history": "histoire 📚", "pizza": "pizza 🍕", "burgers": "hamburgers 🍔",
-    "french": "français 🇫🇷", "spanish": "espagnol 🇪🇸", "books": "livres 📚", "magazines": "magazines 📰",
-    "music": "musique 🎵", "podcasts": "podcasts 🎙️", "car": "voiture 🚗", "dishes": "vaisselle 🍽️",
-    "london": "Londres 🇬🇧", "paris": "Paris 🇫🇷", "school": "école 🏫", "office": "bureau 🏢",
-    "truck": "camion 🚛", "morning": "matin 🌅", "chocolate": "chocolat 🍫", "vegetables": "légumes 🥦",
-    "milk": "lait 🥛", "soda": "soda 🥤", "dinner": "dîner 🍽️", "meals": "repas 🍲", "room": "chambre 🛏️",
-    "house": "maison 🏠", "emails": "e-mails 📧", "stories": "histoires 📖", "songs": "chansons 🎤",
-    "math": "mathématiques 📐", "languages": "langues 🌐", "drone": "drone 🛸", "kites": "cerfs-volants 🪁",
-    "europe": "Europe 🇪🇺", "world": "monde 🌍", "clothes": "vêtements 👕", "shoes": "chaussures 👟",
-    "pictures": "images 🖼️", "walls": "murs 🧱", "spinach": "épinards 🥬", "answer": "réponse 📝"
-};
-
-function verifyStreakOnLoad() {
-    let today = new Date().toDateString();
-    let lastPlayed = localStorage.getItem('ems_last_played');
-    if (lastPlayed && lastPlayed !== today) {
-        let yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-        if (lastPlayed !== yesterday.toDateString()) {
-            localStorage.setItem('ems_streak', 0); 
-        }
+function updateDailyStreakOnWin() {
+  const today = new Date().toISOString().split('T')[0];
+  if (lastActiveDate !== today) {
+    if (lastActiveDate) {
+      const lastDate = new Date(lastActiveDate);
+      const currentDate = new Date(today);
+      const diffDays = Math.ceil(Math.abs(currentDate - lastDate) / (1000 * 60 * 60 * 24));
+      dailyStreak = (diffDays === 1) ? (dailyStreak + 1) : 1;
+    } else {
+      dailyStreak = 1;
     }
-}
-verifyStreakOnLoad();
-
-function openModal(id) { 
-    let el = document.getElementById(id); if(el) el.style.display = "block"; 
-    if(id === 'stat-modal') renderStats(); 
-}
-function closeModal(id) { let el = document.getElementById(id); if(el) el.style.display = "none"; }
-
-function toggleExamMode() {
-    if(!isExamMode) {
-        let pw = prompt("Entrez le mot de passe Professeur (online123) :");
-        if(pw === "online123") { isExamMode = true; closeModal('stat-modal'); alert("Mode EXAMEN activé."); resetGame(); }
-        else alert("Accès refusé.");
-    } else { isExamMode = false; closeModal('stat-modal'); alert("Mode EXAMEN désactivé."); resetGame(); }
+    lastActiveDate = today;
+    localStorage.setItem('dailyStreak', dailyStreak);
+    localStorage.setItem('lastActiveDate', lastActiveDate);
+    document.getElementById('streak').textContent = dailyStreak;
+  }
 }
 
-function applyTheme(themeName) {
-    let t = themes[themeName] || themes["vert"];
-    document.documentElement.style.setProperty('--primary', t.primary);
-    document.documentElement.style.setProperty('--secondary', t.secondary);
-    document.documentElement.style.setProperty('--accent', t.accent);
-}
-
-function syncThemeDropdown() {
-    const select = document.getElementById('theme-select'); if(!select) return;
-    let currentLvl = calculateCurrentLevel(); let savedTheme = localStorage.getItem('ems_theme') || "vert";
-    const themeList = [
-        { id: "vert", name: "🟢 Vert Néon", lvl: 1 }, { id: "bleu", name: "🔵 Bleu Élect.", lvl: 5 },
-        { id: "rose", name: "🌸 Rose Cyber", lvl: 10 }, { id: "jaune", name: "🟡 Jaune Laser", lvl: 15 },
-        { id: "rouge", name: "🔥 Rouge Volcan", lvl: 20 }, { id: "violet", name: "💜 Violet Plasma", lvl: 25 }
+// Initialisation des Défis du Jour (Daily Quests)
+function initDailyQuests() {
+  const today = new Date().toISOString().split('T')[0];
+  if (questDate !== today) {
+    dailyQuests = [
+      { id: 1, text: "Atteindre un Combo de x5", target: 5, current: 0, done: false },
+      { id: 2, text: "Valider 5 verbes en Hard Mode", target: 5, current: 0, done: false },
+      { id: 3, text: "Compléter un jeu de Matching", target: 1, current: 0, done: false }
     ];
-    select.innerHTML = themeList.map(t => {
-        let isLocked = currentLvl < t.lvl;
-        return `<option value="${t.id}" ${isLocked ? 'disabled' : ''}>${t.name} ${isLocked ? `(🔒 Lvl ${t.lvl})` : ''}</option>`;
-    }).join('');
-    select.value = savedTheme; applyTheme(savedTheme);
+    questDate = today;
+    localStorage.setItem('questDate', questDate);
+    localStorage.setItem('dailyQuests', JSON.stringify(dailyQuests));
+  }
 }
 
-function saveTheme() { const select = document.getElementById('theme-select'); if(select) { localStorage.setItem('ems_theme', select.value); applyTheme(select.value); } }
-
-function playSound(type) {
-    if (isMuted || isExamMode) return; 
-    try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.connect(gain); gain.connect(ctx.destination);
-        if (type === 'correct') {
-            osc.frequency.setValueAtTime(587.33, ctx.currentTime); osc.frequency.setValueAtTime(880, ctx.currentTime + 0.1);
-            gain.gain.setValueAtTime(0.08, ctx.currentTime); osc.start(); osc.stop(ctx.currentTime + 0.25);
-        } else if (type === 'wrong') {
-            osc.frequency.setValueAtTime(220, ctx.currentTime); osc.frequency.linearRampToValueAtTime(110, ctx.currentTime + 0.3);
-            gain.gain.setValueAtTime(0.12, ctx.currentTime); osc.start(); osc.stop(ctx.currentTime + 0.3);
-        } else if (type === 'levelup') {
-            let notes = [261.63, 329.63, 392.00, 523.25];
-            notes.forEach((freq, index) => {
-                let oscL = ctx.createOscillator(); oscL.connect(gain); oscL.frequency.setValueAtTime(freq, ctx.currentTime + (index * 0.1));
-                gain.gain.setValueAtTime(0.08, ctx.currentTime + (index * 0.1)); oscL.start(ctx.currentTime + (index * 0.1)); oscL.stop(ctx.currentTime + (index * 0.1) + 0.2);
-            });
-        }
-    } catch(e) {}
-}
-
-function triggerConfetti() {
-    if (typeof confetti === 'function' && !isExamMode) {
-        confetti({ particleCount: 25, spread: 35, origin: { y: 0.85 } });
+function progressQuest(id, amount = 1) {
+  const quest = dailyQuests.find(q => q.id === id);
+  if (quest && !quest.done) {
+    quest.current = Math.min(quest.target, quest.current + amount);
+    if (quest.current >= quest.target) {
+      quest.done = true;
+      gainXp(250); // Gros bonus pour l'accomplissement d'un défi
+      alert(`🎯 Défi du jour réussi : ${quest.text} ! (+250 XP)`);
     }
+    localStorage.setItem('dailyQuests', JSON.stringify(dailyQuests));
+  }
 }
-function triggerEndConfetti() {
-    if (typeof confetti === 'function' && !isExamMode) {
-        confetti({ particleCount: 100, spread: 60, origin: { y: 0.6 } });
+
+function saveData() {
+  localStorage.setItem('verbsData', JSON.stringify(verbs));
+  localStorage.setItem('verbScore', currentScore);
+  localStorage.setItem('playerXp', playerXp);
+  localStorage.setItem('playerLevel', playerLevel);
+  localStorage.setItem('currentDifficulty', currentDifficulty);
+  localStorage.setItem('visualTheme', activeVisualTheme);
+  localStorage.setItem('recentErrors', JSON.stringify(recentErrors));
+  if (currentStreak > bestStreak) {
+    bestStreak = currentStreak;
+    localStorage.setItem('bestStreak', bestStreak);
+  }
+}
+
+function playSuccessSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(523.25, ctx.currentTime); 
+    osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.08); 
+    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.3);
+  } catch (e) {}
+}
+
+// Micro-animations de Game Feel (Secousse physique de l'interface)
+function triggerGameFeelEffect(isCorrect) {
+  const container = document.querySelector('.container');
+  if (!container) return;
+  const effect = isCorrect ? 'animation-success' : 'animation-error';
+  container.classList.add(effect);
+  setTimeout(() => container.classList.remove(effect), 400);
+}
+
+function gainXp(amount) {
+  playerXp += amount;
+  
+  // Enregistrement temporel pour la Timeline
+  const today = new Date().toISOString().split('T')[0];
+  xpHistory[today] = (xpHistory[today] || 0) + amount;
+  localStorage.setItem('xpHistory', JSON.stringify(xpHistory));
+
+  let xpNeeded = getXpNeededForNextLevel(playerLevel);
+  while (playerXp >= xpNeeded) {
+    playerXp -= xpNeeded;
+    playerLevel++;
+    xpNeeded = getXpNeededForNextLevel(playerLevel);
+    alert(`🎉 Félicitations ! Vous passez au Niveau Joueur ${playerLevel} !`);
+  }
+  updateStats();
+  updateDifficultySelect();
+  updateVisualThemeSelect();
+  saveData();
+}
+
+function updateDifficultySelect() {
+  const select = document.getElementById('difficultySelect');
+  if (!select) return;
+  difficultyLevels.forEach((numVerbs, index) => {
+    const option = select.options[index];
+    const requiredPlayerLevel = index + 1; 
+    if (playerLevel >= requiredPlayerLevel) {
+      option.disabled = false;
+      option.textContent = `Level ${index + 1} (${numVerbs} verbes)`;
+    } else {
+      option.disabled = true;
+      option.textContent = `Level ${index + 1} (${numVerbs} verbes) 🔒 (Niv ${requiredPlayerLevel})`;
     }
+  });
+  select.value = currentDifficulty;
 }
 
-function getReconstructedSentence(q) {
-    if (q.text.includes(')')) {
-        const partsBefore = q.text.split('...');
-        const partAfterParenthesis = q.text.substring(q.text.indexOf(')') + 1);
-        
-        // Si la phrase commence par les pointillés (Forme Interrogative)
-        if (q.text.startsWith('...')) {
-            return q.answer + partAfterParenthesis;
-        }
-        // Formes Affirmatives et Négatives
-        return partsBefore[0] + q.answer + partAfterParenthesis;
+function updateVisualThemeSelect() {
+  const select = document.getElementById('visualThemeSelect');
+  if (!select) return;
+  select.options[1].disabled = playerLevel < 3;  
+  select.options[2].disabled = playerLevel < 6;  
+  select.options[3].disabled = playerLevel < 8;  
+  select.value = activeVisualTheme;
+}
+
+function changeVisualTheme(themeName) {
+  activeVisualTheme = themeName;
+  document.documentElement.setAttribute('data-visual-theme', themeName);
+  saveData();
+}
+
+function changeDifficulty(value) {
+  currentDifficulty = parseInt(value);
+  saveData();
+  const activeSection = document.querySelector('.section.active').id;
+  showSection(activeSection);
+}
+
+function changeSpeed(value) {
+  speechRate = parseFloat(value);
+}
+
+function updateMastery(base, correct) {
+  if (isErrorReviewMode) return; // Pas de mise à jour de maîtrise sur l'entraînement d'erreurs pures
+  const verb = verbs.find(v => v.base === base);
+  if (!verb) return;
+  verb.mastery = correct ? Math.min(5, (verb.mastery || 0) + 1) : Math.max(0, (verb.mastery || 0) - 1);
+  saveData();
+}
+
+function updateStats() {
+  const xpNeeded = getXpNeededForNextLevel(playerLevel);
+  document.getElementById('totalScore').textContent = currentScore;
+  document.getElementById('streak').textContent = dailyStreak;
+  document.getElementById('playerXp').textContent = playerXp;
+  document.getElementById('playerLevel').textContent = playerLevel;
+  document.getElementById('xpNeeded').textContent = xpNeeded;
+
+  const pct = Math.min(100, (playerXp / xpNeeded) * 100);
+  document.getElementById('xpProgressBar').style.width = `${pct}%`;
+}
+
+function speak(text) {
+  if ('speechSynthesis' in window) {
+    speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-GB';
+    utterance.rate = speechRate;
+    speechSynthesis.speak(utterance);
+  }
+}
+
+// ==========================================================================
+// SECTIONS / MODES DE JEU
+// ==========================================================================
+
+// --- LISTE ---
+function searchVerbs() {
+  const term = document.getElementById('search').value.toLowerCase();
+  const familyFilter = document.getElementById('familySelect').value;
+  const container = document.getElementById('listContent');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const filtered = verbs.slice(0, currentDifficulty).filter(v => {
+    const matchesSearch = v.base.toLowerCase().includes(term) || v.fr.toLowerCase().includes(term);
+    const matchesFamily = familyFilter === 'all' || v.family === familyFilter;
+    return matchesSearch && matchesFamily;
+  });
+
+  filtered.forEach(v => {
+    const div = document.createElement('div');
+    div.className = 'verb-card';
+    const m = v.mastery || 0;
+    const starsHtml = `<span class="mastery-stars">${'★'.repeat(m)}${'☆'.repeat(5 - m)}</span>`;
+
+    div.innerHTML = `
+      <div>
+        <strong>${v.base}</strong> → ${v.past} / ${v.pp}<br>
+        <small>${v.fr}</small>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        ${starsHtml}
+        <button onclick="event.stopImmediatePropagation(); speakAll('${v.base}', '${v.past}', '${v.pp}')">🔊</button>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function speakAll(base, past, pp) {
+  speak(base);
+  setTimeout(() => speak(past), 700 / speechRate);
+  setTimeout(() => speak(pp), 1400 / speechRate);
+}
+
+// --- FLASHCARDS ---
+function toggleAutoplay() {
+  isAutoplayFlashcard = !isAutoplayFlashcard;
+  const btn = document.getElementById('autoplayToggle');
+  btn.textContent = `Lecture Auto : ${isAutoplayFlashcard ? 'ON 🔊' : 'OFF'}`;
+  btn.classList.toggle('active', isAutoplayFlashcard);
+}
+
+function toggleSlideshow() {
+  const btn = document.getElementById('slideshowToggle');
+  if (slideshowInterval) {
+    clearInterval(slideshowInterval);
+    slideshowInterval = null;
+    btn.textContent = "Mode Diaporama : OFF 🎞️";
+    btn.classList.remove('active');
+  } else {
+    showFlashcard();
+    slideshowInterval = setInterval(showFlashcard, 4500);
+    btn.textContent = "Mode Diaporama : ON 🎬";
+    btn.classList.add('active');
+  }
+}
+
+function showFlashcard() {
+  const activePool = getFilteredVerbs();
+  if(!activePool.length) return;
+  currentVerb = pickSRSVerb(activePool); 
+  
+  document.getElementById('flashcard').className = 'card';
+  document.getElementById('flashcard').innerHTML = `
+    <div class="card-inner" onclick="this.parentElement.classList.toggle('flipped')">
+      <div class="front">
+        <h2>${currentVerb.base}</h2>
+        <p>Cliquez ou Espace pour retourner</p>
+      </div>
+      <div class="back">
+        <h2>${currentVerb.past} / ${currentVerb.pp}</h2>
+        <p>${currentVerb.fr}</p>
+        <button class="btn-primary" onclick="event.stopImmediatePropagation(); speakAll('${currentVerb.base}', '${currentVerb.past}', '${currentVerb.pp}')">
+          🔊 Prononcer
+        </button>
+      </div>
+    </div>
+  `;
+
+  if (isAutoplayFlashcard) speakAll(currentVerb.base, currentVerb.past, currentVerb.pp);
+}
+
+// --- QUIZ STANDARD ---
+function startTimeAttackMode() {
+  if (timeAttackTimer) clearInterval(timeAttackTimer);
+  if (quizTimeout) clearTimeout(quizTimeout);
+  isTimeAttack = true;
+  timeAttackSecondsLeft = 30;
+  timeAttackScore = 0;
+  
+  document.getElementById('quizModeContainer').style.display = 'none';
+  document.getElementById('nextQuizBtn').style.display = 'none';
+  document.getElementById('quizTimerDisplay').style.display = 'block';
+  document.getElementById('timerScore').textContent = timeAttackScore;
+  document.getElementById('timerCount').textContent = timeAttackSecondsLeft;
+  
+  startQuiz();
+  timeAttackTimer = setInterval(() => {
+    timeAttackSecondsLeft--;
+    document.getElementById('timerCount').textContent = timeAttackSecondsLeft;
+    if (timeAttackSecondsLeft <= 0) {
+      clearInterval(timeAttackTimer);
+      timeAttackTimer = null;
+      isTimeAttack = false;
+      if (quizTimeout) clearTimeout(quizTimeout);
+      alert(`⏱️ Fin ! Vous avez trouvé ${timeAttackScore} verbes.\nBonus : +${timeAttackScore * 5} XP !`);
+      gainXp(timeAttackScore * 5);
+      document.getElementById('quizModeContainer').style.display = 'block';
+      document.getElementById('nextQuizBtn').style.display = 'block';
+      document.getElementById('quizTimerDisplay').style.display = 'none';
+      startQuiz();
     }
-    // Réponses brèves (ne contiennent pas de parenthèses)
-    return q.text.replace('...', q.answer);
+  }, 1000);
 }
 
-function listenSentence() {
-    if (!currentQuestions[qIndex]) return;
-    try {
-        let isDict = (document.getElementById('mode-select').value === 'dictation');
-        let textToSpeak = isDict ? getReconstructedSentence(currentQuestions[qIndex]) : currentQuestions[qIndex].text.replace(/\.\.\./g, " blank ").replace(/\([^)]*\)/g, "");
-        let msg = new SpeechSynthesisUtterance(textToSpeak); msg.lang = 'en-US'; window.speechSynthesis.speak(msg);
-    } catch(e) {}
+function startQuiz() {
+  if (quizTimeout) clearTimeout(quizTimeout);
+  const activePool = getFilteredVerbs();
+  if(!activePool.length) return;
+  currentVerb = pickSRSVerb(activePool); 
+
+  const correct = `${currentVerb.past} / ${currentVerb.pp}`;
+  let options = [correct];
+  while (options.length < 4) {
+    const rand = verbs[Math.floor(Math.random() * verbs.length)];
+    const wrong = `${rand.past} / ${rand.pp}`;
+    if (!options.includes(wrong)) options.push(wrong);
+  }
+  options.sort(() => Math.random() - 0.5);
+
+  let html = `<h3>${currentVerb.base} (${currentVerb.fr})</h3>`;
+  options.forEach(opt => {
+    html += `<button class="option" onclick="checkQuiz(this, '${opt}', '${correct}')">${opt}</button>`;
+  });
+  document.getElementById('quizContent').innerHTML = html;
 }
 
-function normalize(str) { return str.toLowerCase().trim().replace(/’/g, "'").replace(/\bdoes not\b/g, "doesn't").replace(/\bdo not\b/g, "don't"); }
-function cleanPunctuation(str) { return str.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g,"").replace(/\s{2,}/g," "); }
+function checkQuiz(btn, selected, correct) {
+  document.querySelectorAll('#quizContent .option').forEach(b => b.disabled = true);
+  const isCorrect = selected === correct;
+  btn.style.background = isCorrect ? '#10b981' : '#ef4444';
+  btn.style.color = 'white';
+  handleQuizResult(isCorrect, false);
+  quizTimeout = setTimeout(startQuiz, 1000);
+}
 
-function getErrorMarkup(userInput, correctAnswer) {
-    let html = `<div>Saisie : `;
-    for(let i=0; i < userInput.length; i++) {
-        if(correctAnswer[i] && userInput[i].toLowerCase() === correctAnswer[i].toLowerCase()) { html += `<span style="color:white">${userInput[i]}</span>`; }
-        else { html += `<del>${userInput.substr(i)}</del>`; break; }
+// --- HARD MODE DÉDIÉ (SAISIE TEXTE) ---
+function startHardMode() {
+  if (quizTimeout) clearTimeout(quizTimeout);
+  const activePool = getFilteredVerbs();
+  
+  if(!activePool.length) {
+    document.getElementById('hardModeContent').innerHTML = `
+      <div class="status-message" style="color: #10b981; font-weight: bold; padding: 20px;">
+        🎉 Le carnet d'entraînement sélectionné est actuellement vide !
+      </div>`;
+    return;
+  }
+  
+  currentVerb = pickSRSVerb(activePool);
+
+  let html = isErrorReviewMode ? `
+    <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid #e14444; color: #ef4444; padding: 8px; border-radius: 6px; margin-bottom: 15px; font-weight: bold; font-size: 0.9rem;">
+      🛠️ Mode Historique : Correction de vos fautes récentes (Zéro XP)
+    </div>` : (isReviewMode ? `
+    <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; color: #3b82f6; padding: 8px; border-radius: 6px; margin-bottom: 15px; font-weight: bold; font-size: 0.9rem;">
+      🎯 Mode Révision : Entraînement ciblé sur vos verbes faibles
+    </div>` : '');
+
+  html += `<h3>${currentVerb.base} (${currentVerb.fr})</h3>`;
+  html += `
+    <div class="hard-mode-container">
+      <input type="text" id="inputPast" placeholder="Prétérit (Past)" autocomplete="off" autofocus>
+      <input type="text" id="inputPP" placeholder="Participe Passé (Past Participle)" autocomplete="off">
+      <button class="btn-primary" style="width:100%; margin-top:10px;" onclick="checkHardModeQuiz()">Valider la saisie</button>
+      <div id="correctionBox"></div>
+    </div>
+  `;
+  document.getElementById('hardModeContent').innerHTML = html;
+  document.getElementById('inputPast').focus();
+
+  document.getElementById('inputPP').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') checkHardModeQuiz();
+  });
+}
+
+function checkHardModeQuiz() {
+  const inputPast = document.getElementById('inputPast');
+  const inputPP = document.getElementById('inputPP');
+  if (!inputPast || !inputPP || inputPast.disabled) return;
+  
+  const userPast = inputPast.value.trim().toLowerCase();
+  const userPP = inputPP.value.trim().toLowerCase();
+  
+  const validPasts = currentVerb.past.split('/').map(s => s.trim().toLowerCase());
+  const validPPs = currentVerb.pp.split('/').map(s => s.trim().toLowerCase());
+  
+  const isPastCorrect = validPasts.includes(userPast);
+  const isPPCorrect = validPPs.includes(userPP);
+  const isCorrect = isPastCorrect && isPPCorrect;
+
+  inputPast.disabled = true;
+  inputPP.disabled = true;
+  inputPast.className = isPastCorrect ? 'input-success' : 'input-error';
+  inputPP.className = isPPCorrect ? 'input-success' : 'input-error';
+
+  handleQuizResult(isCorrect, true);
+
+  if(!isCorrect) {
+    document.getElementById('correctionBox').innerHTML = `
+      <p style="color:#ef4444; font-weight:600; margin-top:10px;">
+        Correction : <strong>${currentVerb.past} / ${currentVerb.pp}</strong>
+      </p>
+    `;
+    if (!recentErrors.includes(currentVerb.base)) {
+      recentErrors.push(currentVerb.base);
+      if (recentErrors.length > 10) recentErrors.shift(); // Conserve les 10 dernières fautes
     }
-    html += ` ➔ Attendu : <ins>${correctAnswer}</ins></div>`; return html;
+  }
+
+  if (isCorrect && !isErrorReviewMode) progressQuest(2); 
+  quizTimeout = setTimeout(startHardMode, isCorrect ? 1200 : 3000);
 }
 
-function calculateCurrentLevel() {
-    let completedModes = getSafeLocalStorage('ems_completed_modes', []);
-    if (completedModes.length < 6) return 1; 
-    return Math.min(30, Math.floor(totalXp / 500) + 1);
-}
+function handleQuizResult(isCorrect, bonusPoints = false) {
+  triggerGameFeelEffect(isCorrect);
+  updateMastery(currentVerb.base, isCorrect);
+  
+  const badge = document.getElementById('comboBadge');
 
-function triggerLevelUp(lvl) {
-    playSound('levelup'); let card = document.getElementById('main-card'); if(card) card.classList.add('level-up-flash');
-    triggerConfetti();
-    let fb = document.getElementById('feedback'); if(fb) fb.innerHTML = `<h2 style="color:gold; animation:shake 0.5s; font-family:'Orbitron';">⭐ LEVEL UP ! NIVEAU ${lvl} ⭐</h2>`;
-    setTimeout(() => { if(card) card.classList.remove('level-up-flash'); }, 1500);
-}
-
-function updateMenuStateAndColors() {
-    let completedModes = getSafeLocalStorage('ems_completed_modes', []);
-    const selectElem = document.getElementById('mode-select'); if (!selectElem) return;
-    for (let i = 0; i < selectElem.options.length; i++) {
-        let opt = selectElem.options[i]; let val = opt.value;
-        if (val === 'revenge' || val === 'duel' || val === 'lab') { opt.style.color = (val === 'revenge' && errorBook.length > 0) ? "#FF4D4D" : "#888888"; continue; }
-        if (completedModes.includes(val)) { opt.style.color = "#00FF85"; opt.text = `${menuBaseTexts[val]} (10 Qs) 🟢`; }
-        else { opt.style.color = "#FF4D4D"; opt.text = `${menuBaseTexts[val]} (10 Qs) 🔴`; }
-    }
-}
-
-function syncAvatarDropdown() {
-    const select = document.getElementById('avatar-select'); if(!select) return;
-    let currentLvl = calculateCurrentLevel(); let savedAv = localStorage.getItem('ems_selected_avatar') || "👤";
-    select.innerHTML = avatarList.map((av, idx) => {
-        let requiredLvl = idx * 3 + 1; let isLocked = currentLvl < requiredLvl;
-        return `<option value="${av}" ${isLocked ? 'disabled' : ''}>${av} ${isLocked ? `(🔒 Lvl ${requiredLvl})` : ''}</option>`;
-    }).join('');
-    select.value = savedAv;
-}
-function saveAvatar() { const select = document.getElementById('avatar-select'); if(select) localStorage.setItem('ems_selected_avatar', select.value); }
-
-function getAdaptiveQuestion(pool) {
-    if (pool.length === 0) return null;
-    let hardPattern = /doesn't|don't|es|ies/;
-    let filtered = [];
+  if (isCorrect) {
+    playSuccessSound();
+    updateDailyStreakOnWin();
     
-    if (combo >= 3 && !isExamMode) {
-        filtered = pool.filter(q => hardPattern.test(normalize(q.answer)));
-    } else if (combo === 0 && !isExamMode) {
-        filtered = pool.filter(q => !hardPattern.test(normalize(q.answer)) && !normalize(q.answer).endsWith('s'));
+    currentCombo++;
+    const multiplier = currentCombo >= 5 ? 2 : 1; 
+    
+    if (multiplier > 1 && badge) {
+      badge.style.display = 'inline-block';
+      badge.textContent = `Combo x${currentCombo} 🔥`;
+    }
+
+    if (!isErrorReviewMode) {
+      const baseScore = bonusPoints ? 15 : 10;
+      const baseXp = bonusPoints ? 30 : 20;
+      currentScore += baseScore * multiplier;
+      gainXp(baseXp * multiplier);
     }
     
-    let selectionList = (filtered.length > 0) ? filtered : pool;
-    let randomIdx = Math.floor(Math.random() * selectionList.length);
-    let selectedQ = selectionList[randomIdx];
-    
-    let indexInPool = pool.indexOf(selectedQ);
-    if (indexInPool > -1) pool.splice(indexInPool, 1);
-    
-    return selectedQ;
+    currentStreak++;
+    progressQuest(1, currentCombo); 
+    if (isTimeAttack) {
+      timeAttackScore++;
+      document.getElementById('timerScore').textContent = timeAttackScore;
+    }
+  } else {
+    currentCombo = 0;
+    currentStreak = 0;
+    if (badge) badge.style.display = 'none';
+  }
+  updateStats();
+  saveData();
 }
 
-function displaySentenceWithHints(q, isDictMode) {
-    let sentElem = document.getElementById('sentence'); if (!sentElem) return;
-    document.getElementById('vocab-hint-bar').innerText = ""; 
-    
-    if (isDictMode || isExamMode) {
-        sentElem.innerText = isDictMode ? "🎧 Écoutez attentivement et écrivez la phrase complète !" : q.text;
-        return;
-    }
+// --- MATCHING ---
+let selectedBaseItem = null;
+let selectedFrItem = null;
+let matchingPairsLeft = 0;
 
-    let words = q.text.split(" ");
-    sentElem.innerHTML = ""; 
-    
-    words.forEach(w => {
-        let cleanWord = w.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g,"");
-        if (vocabTranslations[cleanWord]) {
-            let span = document.createElement("span");
-            span.className = "hint-word";
-            span.innerText = w + " ";
-            span.addEventListener("mouseenter", () => showVocabHint(vocabTranslations[cleanWord]));
-            span.addEventListener("click", () => showVocabHint(vocabTranslations[cleanWord]));
-            sentElem.appendChild(span);
-        } else {
-            sentElem.appendChild(document.createTextNode(w + " "));
-        }
+function startMatching() {
+  selectedBaseItem = null; selectedFrItem = null;
+  const activePool = getFilteredVerbs();
+  if(!activePool.length) return;
+  const shuffledVerbs = [...activePool].sort(() => Math.random() - 0.5);
+  const selectedVerbs = shuffledVerbs.slice(0, 5);
+  matchingPairsLeft = selectedVerbs.length;
+
+  const bases = selectedVerbs.map(v => ({ text: v.base, id: v.base }));
+  const frs = selectedVerbs.map(v => ({ text: v.fr, id: v.base }));
+  bases.sort(() => Math.random() - 0.5);
+  frs.sort(() => Math.random() - 0.5);
+
+  let html = `<div class="matching-board"><div class="matching-column" id="matchingBases"></div><div class="matching-column" id="matchingFrs"></div></div>`;
+  document.getElementById('matchingContent').innerHTML = html;
+
+  const basesCol = document.getElementById('matchingBases');
+  const frsCol = document.getElementById('matchingFrs');
+
+  bases.forEach(b => {
+    const div = document.createElement('div'); div.className = 'matching-item'; div.textContent = b.text; div.dataset.id = b.id;
+    div.onclick = () => selectMatchingItem(div, 'base'); basesCol.appendChild(div);
+  });
+  frs.forEach(f => {
+    const div = document.createElement('div'); div.className = 'matching-item'; div.textContent = f.text; div.dataset.id = f.id;
+    div.onclick = () => selectMatchingItem(div, 'fr'); frsCol.appendChild(div);
+  });
+}
+
+function selectMatchingItem(element, type) {
+  if (element.classList.contains('matched')) return;
+  if (type === 'base') {
+    if (selectedBaseItem) selectedBaseItem.classList.remove('selected');
+    selectedBaseItem = element; selectedBaseItem.classList.add('selected');
+  } else {
+    if (selectedFrItem) selectedFrItem.classList.remove('selected');
+    selectedFrItem = element; selectedFrItem.classList.add('selected');
+  }
+
+  if (selectedBaseItem && selectedFrItem) {
+    const baseId = selectedBaseItem.dataset.id;
+    const frId = selectedFrItem.dataset.id;
+
+    if (baseId === frId) {
+      playSuccessSound();
+      selectedBaseItem.className = 'matching-item matched';
+      selectedFrItem.className = 'matching-item matched';
+      updateMastery(baseId, true);
+      if(!isErrorReviewMode) { currentScore += 5; gainXp(10); }
+      selectedBaseItem = null; selectedFrItem = null; matchingPairsLeft--;
+
+      if (matchingPairsLeft === 0) {
+        setTimeout(() => {
+          document.getElementById('matchingContent').innerHTML = `<div class="status-message">🎉 Tableau complété !</div>`;
+          if(!isErrorReviewMode) { currentScore += 25; gainXp(50); progressQuest(3); }
+          updateStats(); saveData();
+        }, 1000);
+      }
+    } else {
+      const item1 = selectedBaseItem; const item2 = selectedFrItem;
+      item1.className = 'matching-item error'; item2.className = 'matching-item error';
+      updateMastery(baseId, false); currentCombo = 0; 
+      const badge = document.getElementById('comboBadge');
+      if (badge) badge.style.display = 'none';
+      selectedBaseItem = null; selectedFrItem = null;
+      setTimeout(() => {
+        if (item1.className.includes('error')) item1.className = 'matching-item';
+        if (item2.className.includes('error')) item2.className = 'matching-item';
+      }, 1000);
+    }
+    saveData();
+  }
+}
+
+// ==========================================================================
+// ACTIONS DE CONTRÔLE ET STATS AVANCÉES (TIMELINE SVG & PDF)
+// ==========================================================================
+function startReviewPractice() {
+  const weakVerbs = verbs.slice(0, currentDifficulty).filter(v => (v.mastery || 0) < 3);
+  if (weakVerbs.length === 0) {
+    alert("🎉 Aucun verbe faible à travailler !");
+    return;
+  }
+  isReviewMode = true;
+  isErrorReviewMode = false;
+  showSection('hardmode');
+}
+
+function startErrorReviewPractice() {
+  if (recentErrors.length === 0) {
+    alert("🎉 Votre historique d'erreurs récentes est vierge !");
+    return;
+  }
+  isErrorReviewMode = true;
+  isReviewMode = false;
+  showSection('hardmode');
+}
+
+function resetAllStats() {
+  if (confirm("⚠️ Réinitialiser l'INTEGRALITÉ de votre progression ?")) {
+    localStorage.clear();
+    currentScore = 0; currentStreak = 0; bestStreak = 0; playerXp = 0; playerLevel = 1; currentDifficulty = 20;
+    isHardMode = false; isReviewMode = false; isErrorReviewMode = false; currentCombo = 0; recentErrors = []; dailyStreak = 0; lastActiveDate = "";
+    activeVisualTheme = 'classic'; xpHistory = {};
+    verbs.forEach(v => v.mastery = 0);
+    changeVisualTheme('classic');
+    initDailyQuests();
+    updateStats();
+    updateDifficultySelect();
+    updateVisualThemeSelect();
+    showSection('list');
+  }
+}
+
+function showStats() {
+  if(!verbs.length) return;
+  const total = verbs.length;
+  const mastered = verbs.filter(v => (v.mastery || 0) >= 4).length;
+  const percentage = Math.round(mastered / total * 100);
+  const avg = (verbs.reduce((s, v) => s + (v.mastery || 0), 0) / total).toFixed(1);
+
+  // 1. Calcul de l'activité sur les 7 derniers jours
+  const last7Days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split('T')[0];
+    last7Days.push({
+      date: dateStr,
+      label: d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }),
+      xp: xpHistory[dateStr] || 0
     });
-}
-function showVocabHint(translation) { document.getElementById('vocab-hint-bar').innerText = `💡 Traduction : ${translation}`; }
+  }
 
-function resetGame() {
-    if (nextQuestionTimeout) clearTimeout(nextQuestionTimeout); 
-    clearInterval(timerInterval); clearInterval(panicTimer);
-    
-    let gz = document.getElementById('game-zone'); if(gz) gz.innerHTML = initialGameZoneHtml;
-    qIndex = 0; currentScore = 0; combo = 0; duelChallengerInfo = null;
-    sessionXpEarned = 0; 
-    
-    const modeSelect = document.getElementById('mode-select'); const mode = modeSelect ? modeSelect.value : 'affirmative';
-    
-    // Visuels d'en-tête selon le mode (On cache le chrono et compteur pour le Sandbox Morphologique)
-    let pToggle = document.getElementById('panic-toggle-zone');
-    let qCounter = document.getElementById('q-counter-zone');
-    let timerDisp = document.getElementById('timer');
-    let audioBtn = document.getElementById('audio-listen-btn');
+  // Configuration graphique SVG Timeline
+  const maxXp = Math.max(...last7Days.map(d => d.xp), 100);
+  const svgWidth = 600, svgHeight = 180;
+  const paddingLeft = 45, paddingRight = 20, paddingTop = 25, paddingBottom = 25;
+  const graphWidth = svgWidth - paddingLeft - paddingRight;
+  const graphHeight = svgHeight - paddingTop - paddingBottom;
 
-    if (mode === 'lab') {
-        if(pToggle) pToggle.style.display = 'none';
-        if(qCounter) qCounter.style.display = 'none';
-        if(timerDisp) timerDisp.style.display = 'none';
-        if(audioBtn) audioBtn.style.display = 'none';
-        updateProfileUI();
-        initMorphologyLab();
-        return;
-    } else {
-        if(pToggle) pToggle.style.setProperty('display', 'block', 'important');
-        if(qCounter) qCounter.style.setProperty('display', 'flex', 'important');
-        if(timerDisp) timerDisp.style.setProperty('display', 'block', 'important');
-        if(audioBtn) audioBtn.style.setProperty('display', 'inline-block', 'important');
-    }
+  let pointsStr = "";
+  let dotsHtml = "";
+  let gridLinesHtml = `
+    <line x1="${paddingLeft}" y1="${paddingTop}" x2="${svgWidth - paddingRight}" y2="${paddingTop}" stroke="var(--border)" stroke-dasharray="4" />
+    <line x1="${paddingLeft}" y1="${paddingTop + graphHeight/2}" x2="${svgWidth - paddingRight}" y2="${paddingTop + graphHeight/2}" stroke="var(--border)" stroke-dasharray="4" />
+    <line x1="${paddingLeft}" y1="${paddingTop + graphHeight}" x2="${svgWidth - paddingRight}" y2="${paddingTop + graphHeight}" stroke="var(--border)" />
+    <text x="${paddingLeft - 8}" y="${paddingTop + 4}" font-size="10" fill="var(--text)" text-anchor="end">${maxXp} XP</text>
+    <text x="${paddingLeft - 8}" y="${paddingTop + graphHeight/2 + 4}" font-size="10" fill="var(--text)" text-anchor="end">${Math.round(maxXp/2)}</text>
+    <text x="${paddingLeft - 8}" y="${paddingTop + graphHeight + 4}" font-size="10" fill="var(--text)" text-anchor="end">0</text>
+  `;
 
-    const isPanicActive = document.getElementById('panic-toggle') ? document.getElementById('panic-toggle').checked : false;
-    isQcmMode = (mode === 'qcm');
-
-    let pool = [];
-    if (mode === 'duel') {
-        let code = prompt("⚔️ Collez le Code de Défi envoyé par votre camarade :");
-        if (!code) { modeSelect.value = "affirmative"; resetGame(); return; }
-        try {
-            let decoded = JSON.parse(decodeURIComponent(escape(atob(code)))); duelChallengerInfo = decoded;
-            pool = [].concat(...Object.values(questionsData)).filter(q => decoded.qTexts.includes(q.text));
-        } catch(e) { alert("Code de défi corrompu."); modeSelect.value = "affirmative"; resetGame(); return; }
-    } else if (mode === 'revenge') {
-        pool = [...errorBook]; if(pool.length === 0) { gz.innerHTML = `<p style='padding:20px; font-weight:bold;'>Your notebook is clean !</p>`; updateProfileUI(); return; }
-    } else if (mode === 'random' || mode === 'qcm' || mode === 'dictation') {
-        pool = [].concat(...Object.values(questionsData));
-    } else if (mode === 'daily') {
-        pool = [].concat(...Object.values(questionsData)).sort(() => (new Date().getDate() % 3) - 1.5);
-    } else { pool = [...(questionsData[mode] || [])]; }
-
-    roundPool = [...pool];
-    currentQuestions = [];
-    
-    updateProfileUI(); if (!isPanicActive) startNormalTimer();
-    loadQuestion();
-}
-
-// INTÉGRATION : Logique du Morphology Sandbox (Laboratoire Orthographique Éducatif)
-function initMorphologyLab() {
-    let sentElem = document.getElementById('sentence');
-    let intZone = document.getElementById('interaction-zone');
-    if(!sentElem || !intZone) return;
-
-    sentElem.innerHTML = `🔬 <span style="color:var(--accent)">Morphology Lab</span> : Testez la règle de la 3e personne (He/She/It) sur le verbe de votre choix !`;
-    
-    intZone.innerHTML = `
-        <input type="text" id="lab-verb-input" placeholder="Entrez un verbe à l'infinitif (ex: study, play, watch...)" autocomplete="off">
-        <div class="lab-grid">
-            <button onclick="checkLabMorphology('s')">+ S</button>
-            <button onclick="checkLabMorphology('es')">+ ES</button>
-            <button onclick="checkLabMorphology('ies')">+ IES</button>
-        </div>
+  last7Days.forEach((day, i) => {
+    const x = paddingLeft + (i * (graphWidth / 6));
+    const y = paddingTop + graphHeight - ((day.xp / maxXp) * graphHeight);
+    pointsStr += `${x},${y} `;
+    dotsHtml += `
+      <circle cx="${x}" cy="${y}" r="4" fill="var(--accent)" />
+      ${day.xp > 0 ? `<text x="${x}" y="${y - 8}" font-size="10" font-weight="bold" fill="var(--accent)" text-anchor="middle">${day.xp}</text>` : ''}
+      <text x="${x}" y="${paddingTop + graphHeight + 16}" font-size="10" fill="var(--text)" text-anchor="middle">${day.label}</text>
     `;
-    let inputField = document.getElementById('lab-verb-input');
-    if(inputField) inputField.focus();
-}
+  });
 
-function checkLabMorphology(suffixRule) {
-    let inputField = document.getElementById('lab-verb-input');
-    let fb = document.getElementById('feedback');
-    if(!inputField || !fb) return;
-
-    let verb = inputField.value.trim().toLowerCase();
-    if(!verb) { fb.innerHTML = `<span style="color:var(--error); font-weight:bold;">Veuillez d'abord taper un verbe !</span>`; return; }
-
-    // Règles morphologiques du Present Simple anglais
-    let correctSuffix = "s";
-    let explanation = `Pour la majorité des verbes, on ajoute simplement un <b>-s</b> à la 3e personne du singulier.`;
-
-    if (verb.endsWith('ch') || verb.endsWith('sh') || verb.endsWith('ss') || verb.endsWith('x') || verb.endsWith('z') || verb.endsWith('o')) {
-        correctSuffix = "es";
-        explanation = `Les verbes se terminant par <b>-ch, -sh, -ss, -x, -z, ou -o</b> prennent la terminaison <b>-es</b> pour faciliter la prononciation.`;
-    } else if (verb.endsWith('y') && !['a','e','i','o','u'].includes(verb.charAt(verb.length - 2))) {
-        correctSuffix = "ies";
-        explanation = `Les verbes se terminant par une <b>consonne + Y</b> transforment leur Y en I et prennent la terminaison <b>-ies</b> (ex: study ➔ studies).`;
-    } else if (verb.endsWith('y') && ['a','e','i','o','u'].includes(verb.charAt(verb.length - 2))) {
-        correctSuffix = "s";
-        explanation = `Attention ! Le verbe se termine par une <b>voyelle + Y</b> (comme play ou enjoy). La règle du Y ne s'applique pas, on ajoute juste un <b>-s</b>.`;
-    }
-
-    let resultWord = "";
-    if (correctSuffix === "ies") {
-        resultWord = verb.slice(0, -1) + "ies";
-    } else {
-        resultWord = verb + correctSuffix;
-    }
-
-    if (suffixRule === correctSuffix) {
-        fb.innerHTML = `
-            <div class="error-highlight" style="border-left-color:var(--primary); background:rgba(0,255,133,0.04);">
-                <span style="color:var(--primary); font-weight:bold; font-family:'Orbitron'; font-size:1.2rem;">🔬 RECHERCHE RÉUSSIE !</span><br>
-                <p style="margin:5px 0; font-size:1.1rem;">He / She / It ➔ <b style="color:var(--primary); text-transform:uppercase;">${resultWord}</b></p>
-                <span style="color:#aaa; font-size:13px;">💡 ${explanation}</span>
-            </div>
-        `;
-        playSound('correct');
-        triggerConfetti();
-    } else {
-        // Effet d'explosion visuelle du laboratoire en cas d'erreur
-        fb.innerHTML = `
-            <div class="error-highlight">
-                <span style="color:var(--error); font-weight:bold; font-family:'Orbitron'; font-size:1.2rem;">💥 LAB EXPLOSION !</span><br>
-                <p style="margin:5px 0; font-size:1.1rem;">La formule a échoué. Vous avez appliqué <b style="color:var(--error)">+${suffixRule.toUpperCase()}</b>.</p>
-                <span style="color:#bbb; font-size:13px;">➔ Attendu : <b>${resultWord}</b> (+${correctSuffix.toUpperCase()})<br>💡 ${explanation}</span>
-            </div>
-        `;
-        playSound('wrong');
-        let mainCard = document.querySelector('.container');
-        if(mainCard) {
-            mainCard.style.animation = "shake 0.4s";
-            setTimeout(() => mainCard.style.animation = "", 400);
-        }
-    }
-}
-
-function startNormalTimer() {
-    startTime = Date.now();
-    timerInterval = setInterval(() => {
-        let elapsed = Math.floor((Date.now() - startTime) / 1000);
-        let mins = Math.floor(elapsed / 60).toString().padStart(2, '0'); let secs = (elapsed % 60).toString().padStart(2, '0');
-        let timerDisp = document.getElementById('timer'); if(timerDisp) timerDisp.innerText = `${mins}:${secs}`;
-    }, 1000);
-}
-
-function startPanicCountdown() {
-    clearInterval(panicTimer); panicTimeLeft = 8;
-    const timerDisplay = document.getElementById('timer'); const pBar = document.getElementById('progress');
-    if(timerDisplay) { timerDisplay.innerText = "00:08"; timerDisplay.classList.add('panic-text'); }
-    if(pBar) pBar.classList.add('panic');
-    panicTimer = setInterval(() => {
-        panicTimeLeft--; if(timerDisplay) timerDisplay.innerText = `00:0${panicTimeLeft}`; if(pBar) pBar.style.width = `${(panicTimeLeft / 8) * 100}%`;
-        if (panicTimeLeft <= 0) { clearInterval(panicTimer); handleCheck(""); }
-    }, 1000);
-}
-
-function generateQcmOptions(correctAnswer) {
-    let fakes = new Set(); fakes.add(correctAnswer);
-    if(correctAnswer.includes("doesn't")) {
-        fakes.add(correctAnswer.replace("doesn't", "don't")); fakes.add(correctAnswer.replace("doesn't", "not"));
-    } else if(correctAnswer.includes("don't")) {
-        fakes.add(correctAnswer.replace("don't", "doesn't")); fakes.add(correctAnswer.replace("don't", "not"));
-    } else if(correctAnswer.endsWith("s") || correctAnswer.endsWith("es")) {
-        fakes.add(correctAnswer.replace(/e?s$/, "")); fakes.add(correctAnswer + "ing");
-    } else if(correctAnswer === "does" || correctAnswer === "do") {
-        fakes.add("does"); fakes.add("do"); fakes.add("is"); fakes.add("are");
-    } else { fakes.add(correctAnswer + "s"); fakes.add("doesn't " + correctAnswer); }
-    while(fakes.size < 4) fakes.add("is " + correctAnswer);
-    return Array.from(fakes).sort(() => Math.random() - 0.5);
-}
-
-function loadQuestion() {
-    if (qIndex >= 10 || (qIndex > 0 && roundPool.length === 0 && !currentQuestions[qIndex])) { endGame(); return; }
+  document.getElementById('statsContent').innerHTML = `
+    <p>Verbes maîtrisés (Niveau 4+) : <strong>${mastered}/${total}</strong> (${percentage}%)</p>
+    <div class="progress-bar-container"><div class="progress-bar" style="width: ${percentage}%;"></div></div>
     
-    const isPanicActive = document.getElementById('panic-toggle') ? document.getElementById('panic-toggle').checked : false;
-    let pBar = document.getElementById('progress'); let timerDisp = document.getElementById('timer');
-    if(pBar) pBar.classList.remove('panic'); if(timerDisp) timerDisp.classList.remove('panic-text');
-    if (!isPanicActive && pBar) pBar.style.width = `${(qIndex / 10) * 100}%`;
-    else if(isPanicActive) startPanicCountdown();
-    
-    if (!currentQuestions[qIndex]) {
-        let matchedQ = getAdaptiveQuestion(roundPool);
-        if (!matchedQ) { endGame(); return; }
-        currentQuestions.push(matchedQ);
-    }
+    <div class="stats-grid">
+      <div class="stat-box"><span>Niveau moyen</span><strong>${avg} / 5</strong></div>
+      <div class="stat-box"><span>Score global</span><strong>${currentScore}</strong></div>
+      <div class="stat-box"><span>Meilleure série</span><strong>${bestStreak} 🔥</strong></div>
+    </div>
 
-    const q = currentQuestions[qIndex];
-    let curQElem = document.getElementById('current-q'); let fbElem = document.getElementById('feedback'); let comboElem = document.getElementById('combo-display');
-    if(curQElem) curQElem.innerText = qIndex + 1; if(fbElem) fbElem.innerHTML = "";
-    if(comboElem) comboElem.innerText = (combo > 2 && !isExamMode) ? `x${combo >= 5 ? 3 : 2} 🔥` : "";
+    <h3 style="margin-top: 25px; margin-bottom: 10px;">📈 Activité & Évolution XP (7 derniers jours)</h3>
+    <div class="chart-wrapper" style="background: var(--card); border: 1px solid var(--border); padding: 15px; border-radius: 8px; margin-bottom: 25px; overflow-x: auto;">
+      <svg viewBox="0 0 ${svgWidth} ${svgHeight}" width="100%" style="min-width: 500px; display: block; overflow: visible;">
+        ${gridLinesHtml}
+        <polyline points="${pointsStr.trim()}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+        ${dotsHtml}
+      </svg>
+    </div>
+  `;
 
-    const mode = document.getElementById('mode-select').value;
-    displaySentenceWithHints(q, mode === 'dictation');
-    if (mode === 'dictation') setTimeout(listenSentence, 400);
+  // Rendu des Défis Quotidiens
+  let questsHtml = '<div class="quests-container">';
+  dailyQuests.forEach(q => {
+    questsHtml += `
+      <div class="quest-line ${q.done ? 'quest-done' : ''}">
+        <span>${q.done ? '✅' : '🎯'} <strong>${q.text}</strong> (${q.current}/${q.target})</span>
+        <div class="quest-mini-bar-container"><div class="quest-mini-bar" style="width:${(q.current/q.target)*100}%"></div></div>
+      </div>`;
+  });
+  document.getElementById('questsContent').innerHTML = questsHtml + '</div>';
 
-    const intZone = document.getElementById('interaction-zone'); if(!intZone) return;
+  // Rendu des Trophées
+  const badgeList = [
+    { name: "Aventurier (Lvl 1)", desc: "20 verbes accessibles", unlocked: playerLevel >= 1 },
+    { name: "Apprenti (Lvl 2)", desc: "40 verbes accessibles", unlocked: playerLevel >= 2 },
+    { name: "Voyageur (Lvl 3)", desc: "60 verbes accessibles", unlocked: playerLevel >= 3 },
+    { name: "Chasseur (Lvl 4)", desc: "80 verbes accessibles", unlocked: playerLevel >= 4 },
+    { name: "Champion (Lvl 5)", desc: "100 verbes accessibles", unlocked: playerLevel >= 5 },
+    { name: "Expert (Lvl 6)", desc: "120 verbes accessibles", unlocked: playerLevel >= 6 },
+    { name: "Maître (Lvl 7)", desc: "150 verbes accessibles", unlocked: playerLevel >= 7 },
+    { name: "Légende (Lvl 8)", desc: "200 verbes accessibles", unlocked: playerLevel >= 8 }
+  ];
 
-    if (isQcmMode) {
-        let options = generateQcmOptions(q.answer); intZone.innerHTML = `<div class="options-grid"></div>`;
-        let grid = intZone.querySelector('.options-grid');
-        options.forEach(opt => { 
-            let btn = document.createElement('button'); btn.innerText = opt;
-            btn.addEventListener('click', () => handleCheck(opt)); grid.appendChild(btn);
-        });
-    } else {
-        intZone.innerHTML = `
-            <input type="text" id="answer-input" placeholder="${mode==='dictation'?'Écrivez toute la phrase...':'Réponse...'}" autocomplete="off">
-            <button class="btn-main" id="btn-validate-text">Vérifier <i class="fas fa-bolt"></i></button>
-        `;
-        let inputField = document.getElementById('answer-input'); let valBtn = document.getElementById('btn-validate-text');
-        if(valBtn) valBtn.addEventListener('click', () => handleCheck());
-        if(inputField) { inputField.focus(); inputField.addEventListener("keypress", (e) => { if(e.key === "Enter") handleCheck(); }); }
-    }
-}
+  let badgesHtml = '<div class="badges-container">';
+  badgeList.forEach(b => {
+    badgesHtml += `
+      <div class="badge-box ${b.unlocked ? 'unlocked' : 'locked'}">
+        <div class="badge-status">${b.unlocked ? '⭐ Débloqué' : '🔒 Verrouillé'}</div>
+        <h4>${b.name}</h4><p>${b.desc}</p>
+      </div>`;
+  });
+  document.getElementById('badgesContent').innerHTML = badgesHtml + '</div>';
 
-function handleCheck(qcmValue = null) {
-    clearInterval(panicTimer); if (!currentQuestions[qIndex]) return;
-    const q = currentQuestions[qIndex]; const fb = document.getElementById('feedback');
-    const inputField = document.getElementById('answer-input');
-    const rawInput = qcmValue !== null ? qcmValue : (inputField ? inputField.value : "");
-    const mode = document.getElementById('mode-select').value;
-    
-    let cleanInput = normalize(rawInput); let cleanAnswer = normalize(q.answer);
-    if (mode === 'dictation') { cleanInput = cleanPunctuation(normalize(rawInput)); cleanAnswer = cleanPunctuation(normalize(getReconstructedSentence(q))); }
-    const oldLvl = calculateCurrentLevel();
-
-    if (cleanInput === cleanAnswer) {
-        combo++; currentScore++; let mult = (combo >= 5) ? 3 : (combo >= 3) ? 2 : 1; if (isExamMode) mult = 1; totalXp += (10 * mult);
-        sessionXpEarned += (10 * mult); 
-        
-        if(!isExamMode && fb) { 
-            fb.innerHTML = `<span style="color:var(--primary); font-weight:bold;">🔥 CORRECT ! ${mult > 1 ? '(COMBO x'+mult+')' : '(+10 XP)'}</span>`; 
-            playSound('correct'); 
-            triggerConfetti();
-        }
-        errorBook = errorBook.filter(item => item.text !== q.text);
-    } else {
-        combo = 0; let catKey = (mode === 'random' || mode === 'qcm' || mode === 'daily' || mode === 'dictation') ? 'affirmative' : mode;
-        if(mistakesByCat[catKey] !== undefined) mistakesByCat[catKey]++;
-        if(normalize(q.answer).endsWith('s') && !normalize(rawInput).endsWith('s')) mistakesByCat.s_errors++;
-        if(!isExamMode && fb) {
-            let targetAnswer = (mode === 'dictation') ? getReconstructedSentence(q) : q.answer;
-            let errorMarkup = isQcmMode ? `Sélection : <span style="color:var(--error)">${rawInput || "Temps expiré"}</span> ➔ Attendu : <b style="color:var(--primary)">${q.answer}</b>` : getErrorMarkup(rawInput, targetAnswer);
-            fb.innerHTML = `<div class="error-highlight">${errorMarkup}</div><div style="color:#aaa; font-size:13px; margin-top:4px;">💡 ${q.rule}</div>`;
-            playSound('wrong'); let mainCard = document.querySelector('.container'); if(mainCard) { mainCard.style.animation = "shake 0.4s"; setTimeout(() => mainCard.style.animation = "", 400); }
-        } else if(fb) fb.innerHTML = `<span style="color:var(--secondary)">Réponse enregistrée.</span>`;
-        if (!errorBook.some(item => item.text === q.text)) { errorBook.push(q); }
-    }
-    localStorage.setItem('ems_xp', totalXp); localStorage.setItem('ems_errors', JSON.stringify(errorBook)); localStorage.setItem('ems_mistakes_cat', JSON.stringify(mistakesByCat));
-    const newLvl = calculateCurrentLevel(); if(newLvl > oldLvl && !isExamMode) setTimeout(() => { triggerLevelUp(newLvl); }, 400);
-    updateProfileUI(); qIndex++; 
-    
-    nextQuestionTimeout = setTimeout(loadQuestion, isExamMode ? 600 : (cleanInput === cleanAnswer ? 1200 : 4500));
-}
-
-function updateProfileUI() {
-    let currentLvl = calculateCurrentLevel(); let completedModes = getSafeLocalStorage('ems_completed_modes', []);
-    let xpInCurrentLvl = totalXp % 500; let currentStreak = localStorage.getItem('ems_streak') || 0;
-    let lvlElem = document.getElementById('player-lvl'); if(lvlElem) lvlElem.innerText = `LVL ${currentLvl}`;
-    let streakElem = document.getElementById('streak-display'); if(streakElem) streakElem.innerText = `${currentStreak} 🔥`;
-    const xpTextElem = document.getElementById('player-xp-text');
-    if (xpTextElem) {
-        if (completedModes.length < 6) { xpTextElem.innerText = `${totalXp} XP (Bloqué Lvl 1 : Fais ${6 - completedModes.length} catégories 🔴)`; xpTextElem.style.color = "var(--error)"; }
-        else { xpTextElem.innerText = currentLvl === 30 ? `${totalXp} XP (MAX)` : `${xpInCurrentLvl} / 500 XP`; xpTextElem.style.color = "var(--primary)"; }
-    }
-    syncAvatarDropdown(); syncThemeDropdown(); updateMenuStateAndColors(); renderBadgesAndLeaderboard();
-}
-
-function renderBadgesAndLeaderboard() {
-    let currentLvl = calculateCurrentLevel(); let totalUnlockedBadges = 0;
-    for (let l = 1; l <= 30; l++) { if (currentLvl >= l) totalUnlockedBadges++; if (currentLvl >= l && perfectStreaks >= l) totalUnlockedBadges++; if (currentLvl >= l && gamesPlayed >= l * 2) totalUnlockedBadges++; }
-    const bZone = document.getElementById('badges');
-    if(bZone) bZone.innerHTML = `<div style="width:100%; margin-bottom:5px; font-weight:bold; color:var(--primary); font-family:'Orbitron'; font-size:0.85rem;">Trophées débloqués : ${totalUnlockedBadges} / 90</div><span class="badge-item unlocked">Subis: Lvl ${currentLvl} 🥉</span><span class="badge-item ${perfectStreaks >= currentLvl ? 'unlocked' : ''}">Sniper (${perfectStreaks}/${currentLvl}) 🥈</span><span class="badge-item ${gamesPlayed >= currentLvl * 2 ? 'unlocked' : ''}">Vétéran (${gamesPlayed}/${currentLvl * 2}) 🥇</span>`;
-    let highscores = getSafeLocalStorage('ems_lb', []); const lbZone = document.getElementById('leaderboard');
-    if(lbZone) lbZone.innerHTML = highscores.slice(0, 10).map((s, idx) => `<li><span>#${idx+1} ${s.mode}</span><b style="color:var(--primary)">${s.score}/10 (${s.time})</b></li>`).join('') || `<li><span style="opacity:0.5">Aucun record enregistré.</span></li>`;
-}
-
-function renderStats() {
-    const container = document.getElementById('stats-container'); if (!container) return;
-    let diag = (mistakesByCat.s_errors > 5) ? "⚠️ Règle des 3e personnes (-s / -es) non assimilée. Rappelle-toi : He/She/It prennent un -s !" : (mistakesByCat.negative > 5) ? "⚠️ Difficultés sur les négations. Révise l'utilisation de 'don't' et 'doesn't'." : (gamesPlayed === 0) ? "Aucun historique disponible. Termine d'abord un exercice !" : "✅ Excellent profil d'apprentissage. Compétences homogènes.";
-    
-    let xpHistory = getSafeLocalStorage('ems_xp_history', []);
-    let displayHistory = [...xpHistory];
-    while(displayHistory.length < 7) { displayHistory.unshift(0); } 
-    let maxXp = Math.max(...displayHistory, 100); 
-
-    let chartHtml = `
-        <h3 style="color:white; font-family:'Orbitron'; margin-top:25px; font-size:1rem; border-bottom:1px solid #222230; padding-bottom:6px; letter-spacing:0.5px;">📈 Historique d'XP (7 dernières sessions)</h3>
-        <div style="display:flex; align-items:flex-end; justify-content:space-between; height:100px; background:var(--surface-input); padding:20px 10px 5px 10px; border-radius:14px; border:1px solid #222230; margin-top:12px; gap:6px;">
-    `;
-
-    displayHistory.forEach((xp, idx) => {
-        let heightPercent = (xp / maxXp) * 100;
-        chartHtml += `
-        <div style="display:flex; flex-direction:column; align-items:center; height:100%; justify-content:flex-end; flex:1;">
-            <span style="font-size:10px; font-family:'Orbitron'; color:var(--primary); margin-bottom:2px; font-weight:700;">${xp}</span>
-            <div style="width:100%; height:${heightPercent}%; background:linear-gradient(to top, var(--secondary), var(--primary)); border-radius:4px 4px 0 0; box-shadow: 0 0 8px rgba(0,255,133,0.15); min-height:2px;"></div>
-            <span style="font-size:9px; color:#555566; margin-top:3px; font-weight:700;">S${idx+1}</span>
-        </div>
-        `;
+  // Rendu Carnet de Révision
+  const weakVerbs = verbs.slice(0, currentDifficulty).filter(v => (v.mastery || 0) < 3);
+  let reviewHtml = weakVerbs.length === 0 ? '<p class="status-message" style="color: #10b981;">🎉 Tout est maîtrisé !</p>' : '<div class="review-grid">';
+  if (weakVerbs.length > 0) {
+    weakVerbs.forEach(v => {
+      reviewHtml += `<div class="review-notebook-card"><div class="review-card-header"><strong>${v.base}</strong> <small>(${v.fr})</small></div><div class="review-card-footer">Maîtrise : ${v.mastery || 0}/5</div></div>`;
     });
-    chartHtml += `</div>`;
+    reviewHtml += '</div>';
+  }
+  document.getElementById('reviewNotebookContent').innerHTML = reviewHtml;
 
-    container.innerHTML = `
-        <div class="rule-card" style="border-color:var(--accent); margin-top:10px;"><h3>🩺 Diagnostic Pédagogique (Prof)</h3><p>${diag}</p></div>
-        <div class="stat-line"><span>Erreurs - Formes Affirmatives</span><span style="color:var(--error)">${mistakesByCat.affirmative}</span></div>
-        <div class="stat-line"><span>Erreurs - Formes Négatives</span><span style="color:var(--error)">${mistakesByCat.negative}</span></div>
-        <div class="stat-line"><span>Erreurs - Formes Interrogatives</span><span style="color:var(--error)">${mistakesByCat.interrogative}</span></div>
-        <div class="stat-line"><span>Oublis du '-s' à la 3e personne</span><span style="color:var(--accent)">${mistakesByCat.s_errors}</span></div>
-        <div class="stat-line"><span>Total de séries terminées</span><span style="color:var(--secondary)">${gamesPlayed}</span></div>
-        ${chartHtml}
-    `;
+  // Rendu Carnet des erreurs récentes
+  let errorHtml = recentErrors.length === 0 ? '<p class="status-message" style="color:#10b981;">🎉 Aucune erreur récente !</p>' : '<div class="review-grid">';
+  if (recentErrors.length > 0) {
+    recentErrors.forEach(errBase => {
+      const v = verbs.find(v => v.base === errBase);
+      if (v) errorHtml += `<div class="review-notebook-card" style="border-color:#ef4444;"><div class="review-card-header"><strong>${v.base}</strong> → ${v.past} / ${v.pp}</div></div>`;
+    });
+    errorHtml += '</div>';
+  }
+  document.getElementById('errorNotebookContent').innerHTML = errorHtml;
 }
 
-function copyScoreToClipboard(textToCopy) { navigator.clipboard.writeText(textToCopy).then(() => { alert("Code copié !"); }); }
-function checkDailyStreak() { let today = new Date().toDateString(); let lastPlayed = localStorage.getItem('ems_last_played'); let streak = parseInt(localStorage.getItem('ems_streak')) || 0; if (lastPlayed) { if (lastPlayed === today) return; let yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1); if (lastPlayed === yesterday.toDateString()) streak++; else streak = 1; } else { streak = 1; } localStorage.setItem('ems_streak', streak); localStorage.setItem('ems_last_played', today); }
-function exportSave() { let keys = ['ems_xp', 'ems_errors', 'ems_games', 'ems_perfect', 'ems_mistakes_cat', 'ems_completed_modes', 'ems_streak', 'ems_last_played', 'ems_theme', 'ems_selected_avatar', 'ems_lb', 'ems_xp_history', 'ems_muted']; let data = {}; keys.forEach(k => { data[k] = localStorage.getItem(k); }); let base64Code = btoa(unescape(encodeURIComponent(JSON.stringify(data)))); prompt("Copiez ce code de sauvegarde Cloud :", base64Code); }
+// Fiche de révision d'exercice propre imprimable en PDF via moteur natif
+function exportReviewPDF() {
+  const weakVerbs = verbs.slice(0, currentDifficulty).filter(v => (v.mastery || 0) < 3);
+  if (weakVerbs.length === 0) {
+    alert("Votre carnet de révision est vide ! Aucun verbe à exporter.");
+    return;
+  }
+  
+  const printWindow = window.open('', '_blank');
+  let htmlContent = `
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+      <meta charset="UTF-8">
+      <title>Mon Carnet de Révision - English Irregular Verbs</title>
+      <style>
+        body { font-family: 'Segoe UI', system-ui, sans-serif; color: #1e293b; padding: 30px; line-height: 1.4; }
+        header { border-bottom: 2px solid #1c3d5a; padding-bottom: 15px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
+        h1 { margin: 0; color: #1c3d5a; font-size: 1.8rem; }
+        .meta-info { font-size: 0.85rem; color: #64748b; text-align: right; }
+        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+        .verb-card { border: 1px dashed #f58634; padding: 14px; border-radius: 8px; background: #fafafa; page-break-inside: avoid; }
+        .verb-title { font-size: 1.15rem; color: #1c3d5a; font-weight: bold; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 8px; }
+        .forms { font-size: 1rem; margin: 3px 0; }
+        .mastery-tag { font-size: 0.75rem; color: #ef4444; font-weight: bold; margin-top: 8px; text-transform: uppercase; }
+        @media print { body { padding: 0; } .verb-card { border-color: #cbd5e1; background: #fff; } }
+      </style>
+    </head>
+    <body>
+      <header>
+        <div>
+          <h1>Mon Carnet de Révision</h1>
+          <p style="margin: 4px 0 0 0; color: #64748b; font-size: 0.95rem;">Fiche d'étude personnelle générée dynamiquement.</p>
+        </div>
+        <div class="meta-info">Généré le ${new Date().toLocaleDateString('fr-FR')}<br>Pool : <strong>${currentDifficulty} verbes</strong></div>
+      </header>
+      <div class="grid">`;
 
-function importSave() { 
-    let code = prompt("Collez votre code de sauvegarde Cloud ci-dessous :"); 
-    if (!code) return; 
-    try { 
-        let jsonStr = decodeURIComponent(escape(atob(code))); 
-        let data = JSON.parse(jsonStr); 
-        Object.keys(data).forEach(k => { 
-            if (data[k] !== null && data[k] !== undefined) localStorage.setItem(k, data[k]); 
-        }); 
-        alert("Sauvegarde Cloud chargée !"); 
-        location.reload(); 
-    } catch(e) { 
-        alert("Code de sauvegarde invalide."); 
-    } 
+  weakVerbs.forEach(v => {
+    htmlContent += `
+        <div class="verb-card">
+          <div class="verb-title">${v.base.toUpperCase()} <span style="font-weight: normal; font-size: 0.85rem; color: #64748b;">(${v.fr})</span></div>
+          <div class="forms">Prétérit : <strong style="color: #1c3d5a;">${v.past}</strong></div>
+          <div class="forms">Participe Passé : <strong style="color: #1c3d5a;">${v.pp}</strong></div>
+          <div class="mastery-tag">Maîtrise : ${v.mastery || 0} / 5 ★</div>
+        </div>`;
+  });
+
+  htmlContent += `</div>
+      <script>
+        window.onload = function() {
+          window.print();
+          setTimeout(function() { window.close(); }, 500);
+        };
+      <\/script>
+    </body>
+    </html>`;
+
+  printWindow.document.write(htmlContent);
+  printWindow.document.close();
 }
 
-function resetAllStats() { 
-    if(confirm("Effacer TOUTES les statistiques ? Cette action est irréversible.")) { 
-        let keys = ['ems_xp', 'ems_errors', 'ems_games', 'ems_perfect', 'ems_mistakes_cat', 'ems_completed_modes', 'ems_streak', 'ems_last_played', 'ems_theme', 'ems_selected_avatar', 'ems_lb', 'ems_xp_history', 'ems_muted']; 
-        keys.forEach(k => localStorage.removeItem(k)); 
-        alert("Réinitialisation réussie !"); 
-        location.reload(); 
-    } 
+// ==========================================================================
+// NAVIGATION ET RACCOURCIS GLOBAUX
+// ==========================================================================
+function showSection(section) {
+  if (section !== 'flashcards' && slideshowInterval) toggleSlideshow();
+  if (section !== 'quiz' && timeAttackTimer) {
+    clearInterval(timeAttackTimer); timeAttackTimer = null; isTimeAttack = false;
+    document.getElementById('quizModeContainer').style.display = 'block'; 
+    document.getElementById('quizTimerDisplay').style.display = 'none';
+  }
+  if (section !== 'hardmode') { isReviewMode = false; isErrorReviewMode = false; }
+  if (quizTimeout) clearTimeout(quizTimeout);
+
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById(section).classList.add('active');
+  document.getElementById('familyFilterContainer').style.display = (section === 'list') ? 'block' : 'none';
+
+  // Fix exact de surbrillance
+  document.querySelectorAll('nav button').forEach(btn => {
+    btn.classList.remove('active');
+    if(btn.getAttribute('onclick') === `showSection('${section}')`) btn.classList.add('active');
+  });
+
+  if (section === 'list') searchVerbs();
+  if (section === 'flashcards') showFlashcard();
+  if (section === 'quiz') startQuiz();
+  if (section === 'matching') startMatching();
+  if (section === 'hardmode') startHardMode();
+  if (section === 'stats') showStats();
 }
 
-function toggleMute() {
-    isMuted = !isMuted;
-    localStorage.setItem('ems_muted', isMuted);
-    updateAudioButtonUI();
-}
-
-function updateAudioButtonUI() {
-    const btn = document.getElementById('audio-toggle-btn');
-    if (!btn) return;
-    if (isMuted) {
-        btn.innerHTML = `<i class="fas fa-volume-mute" style="color: var(--error);"></i>`;
-        btn.style.borderColor = 'var(--error)';
-    } else {
-        btn.innerHTML = `<i class="fas fa-volume-up" style="color: var(--primary);"></i>`;
-        btn.style.borderColor = '#2a2a38';
+// Gestion des raccourcis clavier
+window.addEventListener('keydown', (e) => {
+  const activeSection = document.querySelector('.section.active').id;
+  if (activeSection === 'quiz') {
+    if (['1', '2', '3', '4'].includes(e.key)) {
+      e.preventDefault();
+      const options = document.querySelectorAll('#quizContent .option');
+      const idx = parseInt(e.key) - 1;
+      if (options[idx] && !options[idx].disabled) options[idx].click();
     }
+  } else if (activeSection === 'flashcards') {
+    if (e.key === ' ') { 
+      e.preventDefault(); 
+      const inner = document.querySelector('.card-inner'); 
+      if (inner) inner.click(); 
+    }
+    if (e.key === 'ArrowRight') { 
+      e.preventDefault(); 
+      showFlashcard(); 
+    }
+  }
+});
+
+// ==========================================================================
+// INITIALISATION & PWA
+// ==========================================================================
+window.onload = async () => {
+  await loadVerbsFromJSON();
+  checkDailyStreak();
+  initDailyQuests();
+  updateStats();
+  updateDifficultySelect();
+  updateVisualThemeSelect();
+  changeVisualTheme(activeVisualTheme);
+  showSection('list');
+
+  document.getElementById('themeToggle').addEventListener('click', () => {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    document.getElementById('themeToggle').textContent = isDark ? '🌙' : '☀️';
+  });
+};
+
+// Enregistrement PWA
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(err => console.log("SW Fail", err));
 }
-
-function endGame() {
-    if (nextQuestionTimeout) clearTimeout(nextQuestionTimeout);
-    clearInterval(timerInterval); clearInterval(panicTimer);
-    let pBar = document.getElementById('progress'); if(pBar) pBar.style.width = "100%";
-    let timerDisp = document.getElementById('timer'); const finalTime = timerDisp ? timerDisp.innerText : "00:00";
-    const selectElem = document.getElementById('mode-select'); const mode = selectElem ? selectElem.value : 'affirmative';
-    let modeName = selectElem ? selectElem.options[selectElem.selectedIndex].text.split('(')[0].trim() : 'Exercice';
-    const isPanicActive = document.getElementById('panic-toggle') ? document.getElementById('panic-toggle').checked : false;
-    
-    gamesPlayed++; localStorage.setItem('ems_games', gamesPlayed);
-    if (currentScore === 10) { 
-        perfectStreaks++; localStorage.setItem('ems_perfect', perfectStreaks); 
-        if(!isExamMode) triggerEndConfetti();
-    }
-
-    const oldLvl = calculateCurrentLevel();
-    if (mode !== 'revenge' && mode !== 'duel') {
-        let done = getSafeLocalStorage('ems_completed_modes', []);
-        if (!done.includes(mode)) { done.push(mode); localStorage.setItem('ems_completed_modes', JSON.stringify(done)); }
-    }
-
-    checkDailyStreak();
-    
-    let xpHistory = getSafeLocalStorage('ems_xp_history', []);
-    xpHistory.push(sessionXpEarned);
-    if (xpHistory.length > 7) xpHistory.shift();
-    localStorage.setItem('ems_xp_history', JSON.stringify(xpHistory));
-
-    let highscores = getSafeLocalStorage('ems_lb', []);
-    highscores.push({ mode: modeName + (isPanicActive ? " 🚨" : ""), score: currentScore, time: finalTime, timestamp: Date.now() });
-    highscores.sort((a, b) => b.score - a.score || a.time.localeCompare(b.time)); localStorage.setItem('ems_lb', JSON.stringify(highscores));
-
-    const newLvl = calculateCurrentLevel(); if(newLvl > oldLvl && !isExamMode) setTimeout(() => { triggerLevelUp(newLvl); }, 400);
-    
-    let diagMsg = mistakesByCat.s_errors > 5 ? "Faiblesse:-s_form" : mistakesByCat.negative > 3 ? "Faiblesse:Auxiliaires" : "Homogène";
-    let shareText = `[PRESENT SIMPLE MASTERY] EXAM:${isExamMode?'OUI':'NON'} | Élève Lvl:${newLvl} | Catégorie: ${modeName} | Note: ${currentScore}/10 | Chrono: ${finalTime} | Profil:${diagMsg} | Verification: PS-${totalXp}X`;
-    
-    let duelCode = btoa(unescape(encodeURIComponent(JSON.stringify({ challenger: localStorage.getItem('ems_selected_avatar') || "👤", score: currentScore, time: finalTime, qTexts: currentQuestions.map(q => q.text) }))));
-
-    let gz = document.getElementById('game-zone');
-    if(gz) {
-        let endHtml = ``;
-        if (mode === 'duel' && duelChallengerInfo) {
-            let isWinner = (currentScore > duelChallengerInfo.score) || (currentScore === duelChallengerInfo.score && finalTime <= duelChallengerInfo.time);
-            endHtml += `<h2 style="color:${isWinner?'var(--primary)':'var(--error)'}; font-family:'Orbitron'; margin-top:20px;">⚔️ ${isWinner ? 'DUEL REMPORTÉ ! 🎉' : 'DEFAITE EN DUEL 💀'}</h2>
-                        <p style="font-size:1.15rem;">Vous : <b>${currentScore}/10</b> (${finalTime})</p>
-                        <p style="font-size:1.15rem; color:#888;">Adversaire ${duelChallengerInfo.challenger} : <b>${duelChallengerInfo.score}/10</b> (${duelChallengerInfo.time})</p>`;
-        } else {
-            endHtml += `<h2 style="color:var(--primary); font-family:'Orbitron'; margin-top:20px;">🎮 ${isExamMode ? 'EXAMEN SÉCURISÉ' : 'CHALLENGE'} TERMINÉ !</h2>
-                        <p style="font-size:1.2rem;">Score obtenu : <b style="color:var(--primary)">${currentScore} / 10</b></p>
-                        <p>Temps enregistré : <b style="color:var(--secondary)">${finalTime}</b></p>`;
-        }
-        
-        endHtml += `<button class="btn-main" id="btn-restart-game">LANCER UN AUTRE DÉFI</button>
-                    <button class="btn-main btn-share" style="background:#1c1a24; border-color:var(--accent); color:var(--accent);" onclick="copyScoreToClipboard('${duelCode}')"><i class="fas fa-hand-fist"></i> GENERER UN CODE DE DUEL (Ami)</button>
-                    <button class="btn-main btn-share" onclick="copyScoreToClipboard('${shareText}')"><i class="fas fa-copy"></i> COPIER LE RAPPORT ENSEIGNANT</button>`;
-        
-        gz.innerHTML = endHtml;
-        let rBtn = document.getElementById('btn-restart-game'); if(rBtn) rBtn.addEventListener('click', () => resetGame());
-    }
-    updateProfileUI();
-}
-
-// Initialisation UI et chargement au boot
-updateAudioButtonUI();
-resetGame();

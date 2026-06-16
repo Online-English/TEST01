@@ -1,53 +1,37 @@
-// sw.js - Service Worker de mise en cache intelligente hors-ligne
-const CACHE_NAME = 'ps-mastery-v5.2'; // Version augmentée pour forcer la mise à jour
+const CACHE_NAME = 'english-v2'; // 👈 C'est ce numéro qu'il faudra changer (v3, v4...) à chaque MAJ
 const ASSETS = [
-    'index.html',
-    'script.js',
-    'relay.js',
-    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css',
-    'https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;700&display=swap'
+  './index.html',
+  './script.js',
+  './style.css',
+  './verbs.json'
 ];
 
-// Installation du Service Worker et mise en cache initiale
+// 1. Installation : Mise en cache des nouveaux fichiers
 self.addEventListener('install', (e) => {
-    e.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll(ASSETS);
-        }).then(() => self.skipWaiting())
-    );
+  e.waitUntil(
+    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
+  );
 });
 
-// Nettoyage automatique des anciens caches
+// 2. NOUVEAU - Activation : Nettoyage automatique des anciens caches obsolètes
 self.addEventListener('activate', (e) => {
-    e.waitUntil(
-        caches.keys().then((keys) => {
-            return Promise.all(
-                keys.map((key) => {
-                    if (key !== CACHE_NAME) {
-                        return caches.delete(key);
-                    }
-                })
-            );
-        }).then(() => self.clients.claim())
-    );
+  e.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cache) => {
+          if (cache !== CACHE_NAME) {
+            console.log("Nettoyage de l'ancien cache :", cache);
+            return caches.delete(cache); // Supprime les anciennes versions (v1, v2...)
+          }
+        })
+      );
+    })
+  );
 });
 
-// Stratégie de secours réseau
+// 3. Interception des requêtes : Service depuis le cache local
 self.addEventListener('fetch', (e) => {
-    e.respondWith(
-        caches.match(e.request).then((cachedResponse) => {
-            if (cachedResponse) {
-                return cachedResponse;
-            }
-            return fetch(e.request).then((networkResponse) => {
-                if (e.request.url.startsWith('http')) {
-                    return caches.open(CACHE_NAME).then((cache) => {
-                        cache.put(e.request, networkResponse.clone());
-                        return networkResponse;
-                    });
-                }
-                return networkResponse;
-            });
-        })
-    );
+  e.respondWith(
+    caches.match(e.request).then(response => response || fetch(e.request))
+  );
 });

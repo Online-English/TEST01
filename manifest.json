@@ -1,24 +1,18 @@
 {
-  "name": "Present Simple Mastery",
-  "short_name": "PS Mastery",
-  "description": "Un RPG de grammaire anglaise pour automatiser le Present Simple.",
-  "start_url": "index.html",
+  "name": "Temps Primitifs • Online English",
+  "short_name": "Online English",
+  "description": "Entraînement ludique et intelligent aux temps primitifs anglais.",
+  "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#030305",
-  "theme_color": "#030305",
-  "orientation": "portrait-primary",
+  "background_color": "#1C3D5A",
+  "theme_color": "#1C3D5A",
+  "orientation": "portrait",
   "icons": [
     {
-      "src": "icon-192.png",
-      "sizes": "192x192",
+      "src": "https://cdn-icons-png.flaticon.com/512/197/197374.png",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ]
 }
